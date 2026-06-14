@@ -1,0 +1,8 @@
+{
+  "go.toolsEnvVars": {
+    "LD_LIBRARY_PATH": "${workspaceFolder}/iroh-rs/target/release"
+  },
+  "go.testEnvVars": {
+    "LD_LIBRARY_PATH": "${workspaceFolder}/iroh-rs/target/release"
+  }
+}
