@@ -43,6 +43,15 @@ func Connect(endpoint EndpointHandle, nodeID string) (ConnectionHandle, error) {
 	return conn, nil
 }
 
+func EndpointNodeId(endpoint EndpointHandle) (string, error) {
+	cNodeId := C.iroh_endpoint_node_id(C.int64_t(endpoint))
+	if cNodeId == nil {
+		return "", iroherr.ErrEndpointNodeId
+	}
+	defer C.free(unsafe.Pointer(cNodeId))
+	return C.GoString(cNodeId), nil
+}
+
 func ConnectionClose(conn ConnectionHandle) error {
 	ok := bool(C.iroh_connection_close(C.int64_t(conn)))
 	if !ok {

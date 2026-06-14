@@ -18,4 +18,8 @@ var (
 	ErrConnectionClose = errors.New(
 		"iroh: connection close failed",
 	)
+
+	ErrEndpointNodeId = errors.New(
+		"iroh: endpoint node id failed",
+	)
 )

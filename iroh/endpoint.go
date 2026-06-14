@@ -30,5 +30,12 @@ func (e *Endpoint) Close() error {
 	}
 
 	ffi.EndpointFree(e.handle)
+
+	e.handle = 0
+
 	return nil
+}
+
+func (e *Endpoint) NodeId() (string, error) {
+	return ffi.EndpointNodeId(e.handle)
 }
