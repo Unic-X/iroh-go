@@ -44,7 +44,7 @@ func Connect(endpoint EndpointHandle, nodeID string) (ConnectionHandle, error) {
 }
 
 func EndpointNodeId(endpoint EndpointHandle) (string, error) {
-	cNodeId := C.iroh_endpoint_node_id(C.int64_t(endpoint))
+	cNodeId := C.iroh_endpoint_id(C.int64_t(endpoint))
 	if cNodeId == nil {
 		return "", iroherr.ErrEndpointNodeId
 	}

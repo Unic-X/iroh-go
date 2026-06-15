@@ -12,9 +12,13 @@ rust:
 go:
 	go build ./...
 
-test: rust
+rust-test: rust
 	cd $(IROH_RS_DIR) && cargo test
+
+go-test:
 	go test ./...
+
+test: rust-test go-test
 
 clean:
 	rm -rf $(IROH_RS_DIR)/target

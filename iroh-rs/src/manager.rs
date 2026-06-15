@@ -1,9 +1,8 @@
 use crate::errors::{self, IrohError};
 use iroh::endpoint::presets;
 use iroh::{endpoint::Connection, Endpoint, EndpointId};
-use std::collections::HashMap;
+use slab::Slab;
 use std::str::FromStr;
-use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
@@ -11,23 +10,17 @@ const ALPN: &[u8] = b"go-iroh/0";
 
 pub struct IrohManager {
     runtime: Arc<Runtime>,
-    endpoints: Mutex<HashMap<i64, Endpoint>>,
-    connections: Mutex<HashMap<i64, Connection>>,
-    next_id: AtomicI64,
+    endpoints: Mutex<Slab<Endpoint>>,
+    connections: Mutex<Slab<Connection>>,
 }
 
 impl IrohManager {
     pub fn new(runtime: Arc<Runtime>) -> Self {
         Self {
             runtime,
-            endpoints: Mutex::new(HashMap::new()),
-            connections: Mutex::new(HashMap::new()),
-            next_id: AtomicI64::new(1),
+            endpoints: Mutex::new(Slab::new()),
+            connections: Mutex::new(Slab::new()),
         }
-    }
-
-    fn alloc_id(&self) -> i64 {
-        self.next_id.fetch_add(1, Ordering::SeqCst)
     }
 
     pub fn create_endpoint(&self) -> Result<i64, errors::IrohError> {
@@ -38,24 +31,35 @@ impl IrohManager {
                 .await
         })?;
 
-        let id = self.alloc_id();
-        self.endpoints.lock().unwrap().insert(id, endpoint);
-        Ok(id)
+        
+        let id = self.endpoints.lock().unwrap().insert(endpoint);
+        Ok(id as i64)
     }
 
     pub fn free_endpoint(&self, id: i64) -> bool {
-        self.endpoints.lock().unwrap().remove(&id).is_some()
+        let mut endpoints = self.endpoints.lock().unwrap();
+
+        if endpoints.contains(id as usize) {
+            endpoints.remove(id as usize);
+            true
+        } else {
+            false
+        }
     }
 
-    pub fn connect(&self, endpoint_id: i64, node_id_str: &str) -> Result<i64, errors::IrohError> {
-        let node_id = EndpointId::from_str(node_id_str)
+
+    // Connect to Endpoint using EndpointId key from its z-base-32 encoding.
+    //
+    // Returns the connection ID.
+    pub fn connect(&self, endpoint_id: i64, endpoint_id_str: &str) -> Result<i64, errors::IrohError> {
+        let node_id = EndpointId::from_str(endpoint_id_str)
             .map_err(|e| errors::IrohError::InvalidNodeId(e.to_string()))?;
 
         let endpoint = self
             .endpoints
             .lock()
             .unwrap()
-            .get(&endpoint_id)
+            .get(endpoint_id as usize)
             .cloned()
             .ok_or(errors::IrohError::EndpointNotFound)?;
 
@@ -63,23 +67,29 @@ impl IrohManager {
             .runtime
             .block_on(async { endpoint.connect(node_id, ALPN).await })?;
 
-        let id = self.alloc_id();
-        self.connections.lock().unwrap().insert(id, conn);
-        Ok(id)
+        let id = self.connections.lock().unwrap().insert(conn);
+        Ok(id as i64)
     }
 
     pub fn close_connection(&self, conn_id: i64) -> bool {
-        self.connections.lock().unwrap().remove(&conn_id).is_some()
+        let mut connections = self.connections.lock().unwrap();
+
+        if connections.contains(conn_id as usize) {
+            connections.remove(conn_id as usize);
+            true
+        } else {
+            false
+        }
     }
 
-    pub fn endpoint_node_id(&self, endpoint_id: i64) -> Result<String, IrohError> {
+    pub fn endpoint_id(&self, endpoint_id: i64) -> Result<String, IrohError> {
         let endpoint = self
-            .endpoints
-            .lock()
-            .unwrap()
-            .get(&endpoint_id)
-            .cloned()
-            .ok_or(IrohError::EndpointNotFound)?;
+        .endpoints
+        .lock()
+        .unwrap()
+        .get(endpoint_id as usize)
+        .cloned()
+        .ok_or(errors::IrohError::EndpointNotFound)?;
         Ok(endpoint.id().to_string())
     }
 
