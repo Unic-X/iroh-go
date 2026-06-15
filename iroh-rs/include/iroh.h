@@ -6,12 +6,26 @@
 
 #include "error.h"
 
+/* Opaque handle types for type safety and clarity */
+typedef void* IrohEndpoint;
+typedef void* IrohConnection;
+typedef void* IrohBuilder;
 
-int64_t iroh_endpoint_new();
-bool iroh_endpoint_free(int64_t handle);
-int64_t iroh_connect(int64_t endpoint, const char* endpoint_id);
-bool iroh_connection_close(int64_t conn);
+IrohBuilder iroh_builder_new(void);
+void iroh_builder_apply_n0(IrohBuilder builder);
+void iroh_builder_apply_minimal(IrohBuilder builder);
+bool iroh_builder_bind_addr(IrohBuilder builder, const char* addr);
+void iroh_builder_free(IrohBuilder builder);
+bool iroh_builder_add_alpn(IrohBuilder builder, const char* alpn);
+void iroh_builder_relay_mode(IrohBuilder builder, uint8_t mode);
+bool iroh_builder_secret_key(IrohBuilder builder, const uint8_t* key);
 
-char* iroh_endpoint_id(int64_t endpoint);
+// IrohEndpoint iroh_endpoint_new(void);
+// void iroh_endpoint_free(IrohEndpoint handle);
 
-#endif
+IrohConnection iroh_endpoint_connect(IrohEndpoint endpoint, const char* endpoint_id);
+void iroh_connection_free(IrohConnection conn);
+
+
+
+#endif   

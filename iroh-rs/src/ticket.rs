@@ -1,9 +1,9 @@
-use core::error;
 use std::sync::Arc;
 
+use iroh::EndpointAddr;
 use iroh_tickets::Ticket as _;
 
-use crate::{EndpointAddr, errors};
+use crate::errors;
 
 /// A token containing information for establishing a connection to an endpoint.
 ///
