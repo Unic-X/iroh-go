@@ -2,12 +2,13 @@ use std::{collections::BTreeSet, net::SocketAddr, str::FromStr, sync::Arc};
 use safer_ffi::{derive_ReprC, prelude::repr_c};
 use iroh_base::{RelayUrl, TransportAddr};
 use crate::errors::IrohError;
-use crate::{EndpointId};
+use crate::key::{EndpointId};
 
 /// An endpoint's id together with the network-level addresses where it can be reached.
 ///
 /// Mirrors `iroh::EndpointAddr` — exposes a flat view over the underlying set of
 /// `TransportAddr`s (one relay URL plus a list of IP/port pairs).
+#[derive_ReprC]
 #[repr(opaque)]
 pub struct EndpointAddr {
     pub id: Arc<EndpointId>,
@@ -31,7 +32,6 @@ impl std::fmt::Display for EndpointAddr {
 
 impl EndpointAddr {
     /// Create a new [`EndpointAddr`].
-    #[uniffi::constructor]
     pub fn new(id: &EndpointId, relay_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
             id: Arc::new(id.clone()),
@@ -98,3 +98,5 @@ impl From<iroh::EndpointAddr> for EndpointAddr {
         }
     }
 }
+
+//TODO:test

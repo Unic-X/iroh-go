@@ -31,7 +31,7 @@ impl EndpointTicket {
     /// The returned ticket can be serialized via [`Self::to_string`] and parsed back
     /// using [`Self::from_string`].
     pub fn from_addr(addr: &EndpointAddr) -> Result<Self, errors::IrohError> {
-        let inner: iroh::EndpointAddr = addr.clone().try_into()?;
+        let inner: iroh::EndpointAddr = addr.clone().into();
         Ok(iroh_tickets::endpoint::EndpointTicket::new(inner).into())
     }
 
@@ -47,3 +47,5 @@ impl EndpointTicket {
         Arc::new(addr.into())
     }
 }
+
+//TODO:test

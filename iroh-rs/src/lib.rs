@@ -7,8 +7,9 @@ mod errors;
 mod endpoint;
 mod runtime;
 mod key;
-// mod net;
-// mod ticket;
+mod net;
+mod ticket;
+
 
 #[ffi_export]
 fn iroh_builder_new() -> repr_c::Box<EndpointBuilder> {
