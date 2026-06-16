@@ -1,4 +1,4 @@
-use iroh::{RelayMode, endpoint::{self, presets, presets::Preset as _}};
+use iroh::{RelayMode, endpoint::{self, presets::{self, Preset as _}}, protocol::AcceptError};
 use safer_ffi::{derive_ReprC, prelude::repr_c};
 use std::{str::FromStr, sync::{Arc, Mutex}};
 use crate::errors::IrohError;
@@ -147,7 +147,80 @@ pub struct EndpointOptions {
     // supplied handlers.
      
     //TODO:CustomProtocol Creator 
-    // pub protocols: Option<HashMap<Vec<u8>, Arc<dyn ProtocolCreator>>>,
+    pub protocols: Option<repr_c::Vec<ProtocolHandler>>,
+}
+
+#[derive_ReprC]
+#[repr(opaque)]
+pub struct Connection(endpoint::Connection);
+
+
+pub type AcceptFn = extern "C" fn(conn: repr_c::Box<Connection>) -> bool;
+pub type ShutdownFn = extern "C" fn();
+
+#[derive(Debug)]
+#[derive_ReprC]
+#[repr(C)]
+pub struct ProtocolHandler {
+    pub alpn: repr_c::Vec<u8>,
+    pub on_accept: AcceptFn,
+    pub on_shutdown: ShutdownFn,
+}
+
+#[derive(Debug, Clone)]
+struct FfiProtocolWrapper {
+    on_accept: AcceptFn,
+    on_shutdown: ShutdownFn,
+}
+
+impl iroh::protocol::ProtocolHandler for FfiProtocolWrapper {
+    async fn accept(
+        &self,
+        conn: iroh::endpoint::Connection,
+    ) -> Result<(), AcceptError> {
+        let conn = Box::new(Connection(conn)).into();
+
+        if (self.on_accept)(conn) {
+            Ok(())
+        } else {
+            Err(AcceptError::from_err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "connection rejected by FFI protocol handler",
+            )))
+        }
+    }
+
+    async fn shutdown(&self) {
+        (self.on_shutdown)();
+    }
+}
+
+/// A snapshot value for a single endpoint metric.
+pub struct CounterStats {
+    /// The counter / gauge value.
+    pub value: u32,
+    /// The metric description.
+    pub description: String,
+}
+
+/// Flat snapshot of the headline numbers from `noq::ConnectionStats`.
+///
+/// Counters are `i64` (not `u64`) so Kotlin sees `Long`, not `ULong`.
+#[derive_ReprC]
+#[repr(C)]
+pub struct ConnectionStats {
+    /// Total UDP datagrams transmitted.
+    pub udp_tx_datagrams: i64,
+    /// Total UDP bytes transmitted.
+    pub udp_tx_bytes: i64,
+    /// Total UDP datagrams received.
+    pub udp_rx_datagrams: i64,
+    /// Total UDP bytes received.
+    pub udp_rx_bytes: i64,
+    /// Total packets considered lost.
+    pub lost_packets: i64,
+    /// Total bytes considered lost.
+    pub lost_bytes: i64,
 }
 
 #[derive_ReprC]
@@ -156,7 +229,6 @@ pub struct Endpoint {
     inner: endpoint::Endpoint,
     router: Option<iroh::protocol::Router>,
 }
-
 
 impl Endpoint {
     pub fn new(ep: endpoint::Endpoint) -> Self {
@@ -202,24 +274,29 @@ impl Endpoint {
         let builder = wrapper.take_inner()?;
         let endpoint = builder.bind().await?;
 
-        // let router = match options.protocols {
-        //     Some(protocols) if !protocols.is_empty() => {
-        //         let mut router_builder = iroh::protocol::Router::builder(endpoint.clone());
-        //         let endpoint_wrapper = Arc::new(Endpoint::new(endpoint.clone()));
-        //         for (alpn, creator) in protocols {
-        //             let handler = creator.create(endpoint_wrapper.clone());
-        //             router_builder = router_builder.accept(alpn, ProtocolWrapper { handler });
-        //         }
-        //         Some(router_builder.spawn())
-        //     }
-        //     _ => None,
-        // };
+        let router = match options.protocols {
+            Some(protocols) if !protocols.is_empty() => {
+                let mut router_builder =
+                    iroh::protocol::Router::builder(endpoint.clone());
+
+                for protocol in protocols.into_iter() {
+                    let wrapper = FfiProtocolWrapper {
+                        on_accept: protocol.on_accept,
+                        on_shutdown: protocol.on_shutdown,
+                    };
+
+                    router_builder =
+                        router_builder.accept(protocol.alpn.to_vec(), wrapper);
+                }
+
+                Some(router_builder.spawn())
+            }
+            _ => None,
+        };
 
         Ok(Endpoint {
             inner: endpoint,
-
-            // TODO: Implement router
-            router: None,
+            router,
         })
     }
 }
