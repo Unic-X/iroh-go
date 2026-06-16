@@ -996,10 +996,13 @@ dependencies = [
 name = "go_iroh"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "iroh",
+ "iroh-base",
  "iroh-tickets",
  "once_cell",
  "safer-ffi",
+ "serde",
  "tokio",
 ]
 

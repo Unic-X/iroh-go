@@ -1,43 +1,41 @@
 use std::fmt;
+use std::error::Error;
+use safer_ffi::derive_ReprC;
 
+#[derive_ReprC]
+#[repr(opaque)]
 #[derive(Debug)]
-pub enum IrohError {
-    EndpointNotFound,
-    EndpointBuilderConsumed,
-    InvalidNodeId(String),
-    Iroh(String),
-    InvalidSecretKeyLength(usize),
-    InvalidSocketAddr(String),
-    BindAddrError(String),
+pub struct IrohError {
+    e: anyhow::Error,
 }
-
-impl fmt::Display for IrohError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            IrohError::EndpointNotFound => write!(f, "endpoint not found"),
-            IrohError::InvalidNodeId(e) => write!(f, "invalid node id: {}", e),
-            IrohError::Iroh(e) => write!(f, "iroh error: {}", e),
-            IrohError::EndpointBuilderConsumed => write!(f, "endpoint builder consumed"),
-            IrohError::InvalidSecretKeyLength(len) => write!(f, "invalid secret key length: {}", len),
-            IrohError::InvalidSocketAddr(e) => write!(f, "invalid socket addr: {}", e),
-            IrohError::BindAddrError(e) => write!(f, "bind addr error: {}", e),
-        }
-    }
-}
-
-impl std::error::Error for IrohError {}
 
 macro_rules! from_iroh_err {
-    ($($err:ty),* $(,)?) => {
+    ($($path:path),* $(,)?) => {
         $(
-            impl From<$err> for IrohError {
-                fn from(err: $err) -> Self {
-                    IrohError::Iroh(err.to_string())
+            impl From<$path> for IrohError {
+                fn from(value: $path) -> Self {
+                    Self {
+                        e: anyhow::anyhow!("{:?}", value),
+                    }
                 }
             }
         )*
     };
 }
+
+impl From<anyhow::Error> for IrohError {
+    fn from(e: anyhow::Error) -> Self {
+        Self { e }
+    }
+}
+
+impl fmt::Display for IrohError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.e)
+    }
+}
+
+
 
 from_iroh_err! {
     iroh::endpoint::BindError,
@@ -54,5 +52,6 @@ from_iroh_err! {
     iroh::endpoint::StoppedError,
     iroh::endpoint::SendDatagramError,
     iroh::endpoint::ResetError,
+    iroh_base::KeyParsingError,
     iroh_tickets::ParseError,
 }

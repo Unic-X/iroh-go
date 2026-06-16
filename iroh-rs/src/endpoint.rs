@@ -29,7 +29,7 @@ impl EndpointBuilder {
             .lock()
             .unwrap()
             .take()
-            .ok_or_else(|| IrohError::EndpointBuilderConsumed)
+            .ok_or_else(|| anyhow::anyhow!("endpoint builder already consumed").into())
     }
     
     // Helper to extract the builder for lib.rs to bind asynchronously
@@ -54,7 +54,7 @@ impl EndpointBuilder {
 
         let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes)
             .try_into()
-            .map_err(|_| IrohError::InvalidSecretKeyLength(bytes.len()))?;
+            .map_err(|e| anyhow::anyhow!("Invalid secret key {e}"))?;
 
         let key = iroh::SecretKey::from_bytes(&key);
         self.map(|b| b.secret_key(key));
@@ -72,7 +72,7 @@ impl EndpointBuilder {
 
     pub fn bind_addr(&self, addr: String) -> Result<(), IrohError> {
         let socket = std::net::SocketAddr::from_str(&addr)
-            .map_err(|e| IrohError::InvalidSocketAddr(e.to_string()))?;
+            .map_err(|e| anyhow::anyhow!("invalid binding address {e}"))?;
         
         // Special handling for bind_addr since it consumes the builder in your original code?
         // Your original code did: let builder = self.take_inner()?; ... *guard = Some(builder);
@@ -82,7 +82,7 @@ impl EndpointBuilder {
         let mut guard = self.inner.lock().unwrap();
         let mut builder = guard.take().expect("EndpointBuilder consumed");
         builder = builder.bind_addr(socket)
-            .map_err(|e| IrohError::BindAddrError(e.to_string()))?;
+            .map_err(|e| anyhow::anyhow!("invalid binding address {e}"))?;
         *guard = Some(builder);
         Ok(())
     }

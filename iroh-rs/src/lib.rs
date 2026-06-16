@@ -1,11 +1,14 @@
 use safer_ffi::prelude::*;
-
+use safer_ffi::{derive_ReprC, prelude::repr_c};
 use crate::{endpoint::{Endpoint, EndpointBuilder, EndpointOptions}, runtime::GLOBAL_RUNTIME};
 use iroh::RelayMode;
 
 mod errors;
 mod endpoint;
 mod runtime;
+mod key;
+// mod net;
+// mod ticket;
 
 #[ffi_export]
 fn iroh_builder_new() -> repr_c::Box<EndpointBuilder> {
@@ -91,3 +94,5 @@ fn generate_headers() -> std::io::Result<()> {
         .to_file("include/iroh.h")?
         .generate()
 }
+
+
