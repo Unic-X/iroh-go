@@ -1,8 +1,7 @@
 use std::{collections::BTreeSet, net::SocketAddr, str::FromStr, sync::Arc};
-use safer_ffi::{derive_ReprC, prelude::repr_c};
+use safer_ffi::derive_ReprC;
 use iroh_base::{RelayUrl, TransportAddr};
-use crate::errors::IrohError;
-use crate::key::{EndpointId};
+use crate::{EndpointId, IrohError};
 
 /// An endpoint's id together with the network-level addresses where it can be reached.
 ///
@@ -10,6 +9,8 @@ use crate::key::{EndpointId};
 /// `TransportAddr`s (one relay URL plus a list of IP/port pairs).
 #[derive_ReprC]
 #[repr(opaque)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+
 pub struct EndpointAddr {
     pub id: Arc<EndpointId>,
     pub relay_url: Option<String>,

@@ -9,7 +9,13 @@ mod runtime;
 mod key;
 mod net;
 mod ticket;
+mod accept;
+mod connection;
 
+
+pub use self::{
+    accept::*, endpoint::*, errors::*, key::*, net::*, ticket::*, connection::*,
+};
 
 #[ffi_export]
 fn iroh_builder_new() -> repr_c::Box<EndpointBuilder> {

@@ -1,5 +1,4 @@
 use std::fmt;
-use std::error::Error;
 use safer_ffi::derive_ReprC;
 
 #[derive_ReprC]
@@ -36,7 +35,6 @@ impl fmt::Display for IrohError {
 }
 
 
-
 from_iroh_err! {
     iroh::endpoint::BindError,
     iroh::endpoint::ConnectError,
@@ -54,4 +52,5 @@ from_iroh_err! {
     iroh::endpoint::ResetError,
     iroh_base::KeyParsingError,
     iroh_tickets::ParseError,
+    n0_future::task::JoinError,
 }

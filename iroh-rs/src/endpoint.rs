@@ -1,7 +1,13 @@
-use iroh::{RelayMode, endpoint::{self, presets::{self, Preset as _}}, protocol::AcceptError};
+use iroh::RelayMode;
+
+use iroh::{
+    endpoint::{self, presets, presets::Preset as _},
+    protocol::AcceptError,
+};
+
 use safer_ffi::{derive_ReprC, prelude::repr_c};
 use std::{str::FromStr, sync::{Arc, Mutex}};
-use crate::errors::IrohError;
+use crate::{EndpointAddr, EndpointId, Incoming, IrohError, SecretKey, Connection};
 
 #[derive_ReprC]
 #[repr(opaque)]
@@ -29,7 +35,7 @@ impl EndpointBuilder {
             .lock()
             .unwrap()
             .take()
-            .ok_or_else(|| anyhow::anyhow!("endpoint builder already consumed").into())
+            .ok_or_else(|| anyhow::anyhow!("EndpointBuilder already consumed").into())
     }
     
     // Helper to extract the builder for lib.rs to bind asynchronously
@@ -88,10 +94,13 @@ impl EndpointBuilder {
     }
 }
 
+#[derive(Debug, Default, Clone)]
 #[derive_ReprC]
 #[repr(u8)]
 pub enum Preset{
-    None = 0,
+    None = 0, 
+    
+    #[default]
     N0 = 1,
     Minimal = 2,
     N0DisableRelay = 3,
@@ -108,8 +117,10 @@ impl Preset {
     }
 }
 
+#[derive(Debug,Default)]
 #[derive_ReprC]
 #[repr(u8)]
+
 pub enum RelayModeFFI {
     /// Disable relay servers completely.
     /// This means that neither listening nor dialing relays will be available.
@@ -117,15 +128,16 @@ pub enum RelayModeFFI {
     /// Use the default relay map, with production relay servers from n0.
     ///
     /// See [`crate::defaults::prod`] for the severs used.
+    #[default]
     Default = 1,
     /// Use the staging relay servers from n0.
     Staging = 2,
     // TODO allow Use of custom relay map.
     // Custom(RelayMap),
 }
-
 #[derive_ReprC]
 #[repr(C)]
+#[derive(Debug, Default)]
 pub struct EndpointOptions {
     /// Preset that configures the endpoint builder. Defaults to [`Preset::N0`].
     
@@ -150,17 +162,12 @@ pub struct EndpointOptions {
     pub protocols: Option<repr_c::Vec<ProtocolHandler>>,
 }
 
-#[derive_ReprC]
-#[repr(opaque)]
-pub struct Connection(endpoint::Connection);
-
-
 pub type AcceptFn = extern "C" fn(conn: repr_c::Box<Connection>) -> bool;
 pub type ShutdownFn = extern "C" fn();
 
-#[derive(Debug)]
 #[derive_ReprC]
 #[repr(C)]
+#[derive(Debug)]
 pub struct ProtocolHandler {
     pub alpn: repr_c::Vec<u8>,
     pub on_accept: AcceptFn,
@@ -299,4 +306,206 @@ impl Endpoint {
             router,
         })
     }
+
+    /// The [`EndpointId`] of this endpoint.
+    pub fn id(&self) -> Arc<EndpointId> {
+        Arc::new(self.inner.id().into())
+    }
+
+    /// The [`EndpointAddr`] for this endpoint (id + currently known addresses).
+    pub fn addr(&self) -> Arc<EndpointAddr> {
+        Arc::new(self.inner.addr().into())
+    }
+
+    /// Connect to a remote endpoint via the given ALPN.
+    pub async fn connect(&self, addr: &EndpointAddr, alpn: &[u8]) -> Result<Connection, IrohError> {
+        let addr: iroh::EndpointAddr = addr.clone().try_into()?;
+        let conn = self.inner.connect(addr, alpn).await?;
+        Ok(Connection(conn))
+    }
+
+
+    /// Shut down the endpoint (and, if present, the protocol router).
+    pub async fn close(&self) -> Result<(), IrohError> {
+        if let Some(router) = &self.router {
+            router.shutdown().await?;
+        } else {
+            self.inner.close().await;
+        }
+        Ok(())
+    }
+
+    /// Returns true if the endpoint has been closed.
+    pub fn is_closed(&self) -> bool {
+        self.inner.is_closed()
+    }
+
+
+    /// The [`SecretKey`] backing this endpoint's identity.
+    pub fn secret_key(&self) -> Arc<SecretKey> {
+        Arc::new(self.inner.secret_key().clone().into())
+    }
+
+
+    /// Add an external (manually-known) socket address that this endpoint is
+    /// reachable on. Useful when running behind a static NAT / load balancer.
+    pub async fn add_external_addr(&self, addr: String) -> Result<(), IrohError> {
+        let socket = std::net::SocketAddr::from_str(&addr).map_err(anyhow::Error::from)?;
+        self.inner.add_external_addr(socket).await;
+        Ok(())
+    }
+
+
+    /// Remove a previously-added external address. Returns true if an entry was
+    /// removed.
+    pub async fn remove_external_addr(&self, addr: String) -> Result<bool, IrohError> {
+        let socket = std::net::SocketAddr::from_str(&addr).map_err(anyhow::Error::from)?;
+        Ok(self.inner.remove_external_addr(&socket).await)
+    }
+
+    /// The local socket addresses this endpoint is bound to.
+    pub fn bound_sockets(&self) -> Vec<String> {
+        self.inner
+            .bound_sockets()
+            .into_iter()
+            .map(|a| a.to_string())
+            .collect()
+    }
+
+    /// Resolves once the endpoint has a usable home relay.
+    pub async fn online(&self) {
+        self.inner.online().await;
+    }
+
+    // /// Insert (or replace) a relay configuration at runtime.
+    // pub async fn insert_relay(&self, config: RelayConfig) -> Result<(), IrohError> {
+    //     let config: iroh::RelayConfig = config.try_into()?;
+    //     let url = config.url.clone();
+    //     self.inner.insert_relay(url, Arc::new(config)).await;
+    //     Ok(())
+    // }
+
+    // /// Remove a relay configuration at runtime. Returns true if a relay was
+    // /// removed.
+    // pub async fn remove_relay(&self, url: String) -> Result<bool, IrohError> {
+    //     let url = iroh::RelayUrl::from_str(&url).map_err(anyhow::Error::from)?;
+    //     Ok(self.inner.remove_relay(&url).await.is_some())
+    // }
+
+    /// Pull the next incoming connection attempt from the accept queue.
+    ///
+    /// Returns `None` once the endpoint is closed. Use this for a custom accept
+    /// loop instead of (or in addition to) registering protocol handlers via
+    /// [`EndpointOptions::protocols`].
+    pub async fn accept_next(&self) -> Option<Arc<Incoming>> {
+        let incoming = self.inner.accept().await?;
+        Some(Arc::new(Incoming::new(incoming)))
+    }
+
+    // /// Begin a connection attempt to `addr` for `alpn`, returning the
+    // /// in-progress [`Connecting`] state.
+    // ///
+    // /// Unlike [`Self::connect`], which awaits the handshake before returning,
+    // /// this exposes the pre-handshake handle so the caller can inspect ALPN or
+    // /// drop the attempt explicitly.
+    // pub async fn connect_pending(
+    //     &self,
+    //     addr: &EndpointAddr,
+    //     alpn: &[u8],
+    // ) -> Result<Connecting, IrohError> {
+    //     let addr: iroh::EndpointAddr = addr.clone().try_into()?;
+    //     let connecting = self
+    //         .inner
+    //         .connect_with_opts(addr, alpn, iroh::endpoint::ConnectOptions::default())
+    //         .await
+    //         .map_err(|e| anyhow::anyhow!("{e:?}"))?;
+    //     Ok(Connecting::new(connecting))
+    // }
+
+    // /// Register a callback that fires whenever the endpoint's [`EndpointAddr`]
+    // /// changes (relay home rotates, IP discovered, etc.). The returned
+    // /// [`WatchHandle`] cancels the watcher when dropped or when its `stop()`
+    // /// method is called.
+    // pub fn watch_addr(&self, callback: Arc<dyn AddrChangeCallback>) -> Arc<WatchHandle> {
+    //     Arc::new(watch::spawn_watch_addr(self.inner.clone(), callback))
+    // }
+
+    // /// Register a callback that fires whenever the list of relays this endpoint
+    // /// is currently connected to changes.
+    // pub fn watch_home_relay(&self, callback: Arc<dyn HomeRelayCallback>) -> Arc<WatchHandle> {
+    //     Arc::new(watch::spawn_home_relay_watch(self.inner.clone(), callback))
+    // }
+
+    // /// Register a callback that fires every time the underlying network stack
+    // /// reports a change (interface up/down, NAT change, roaming, etc.).
+    // pub fn watch_network_change(
+    //     &self,
+    //     callback: Arc<dyn NetworkChangeCallback>,
+    // ) -> Arc<WatchHandle> {
+    //     Arc::new(watch::spawn_network_change_watch(
+    //         self.inner.clone(),
+    //         callback,
+    //     ))
+    // }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_bind_minimal() {
+        let options = EndpointOptions {
+            preset: Preset::Minimal,
+            ..Default::default()
+        };
+
+        let ep = Endpoint::bind(options).await.unwrap();
+
+        
+        assert!(!ep.raw().bound_sockets().is_empty());
+        ep.raw().close();
+    }
+
+    #[tokio::test]
+    async fn test_bind() {
+        let options = EndpointOptions {
+            preset: Preset::N0,
+            ..Default::default()
+        };
+
+        let ep = Endpoint::bind(options).await.unwrap();
+        let id = ep.raw().id();
+        println!("{id}");
+        
+        assert!(!ep.raw().bound_sockets().is_empty(), "should have bound sockets");
+        let secret = ep.raw().secret_key();
+        assert_eq!(secret.public().as_bytes(), id.as_bytes());
+        ep.raw().close().await;
+        assert!(ep.raw().is_closed());
+    }
+
+    #[tokio::test]
+    async fn test_side_paths_compile() {
+        // Surface-level smoke test: the new accept/path types must compile and
+        // be callable. End-to-end connection establishment lives in higher-level
+        // language-binding tests.
+        let ep = Endpoint::bind(EndpointOptions {
+            preset: Preset::N0,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        // accept_next polled with timeout: just confirm it returns a future of
+        // Option<Arc<Incoming>>.
+        let timeout = tokio::time::sleep(std::time::Duration::from_millis(10));
+        tokio::pin!(timeout);
+        tokio::select! {
+            _ = &mut timeout => {}
+            _next = ep.accept_next() => {}
+        }
+        ep.raw().close().await;
+    }
+
 }

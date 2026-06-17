@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use iroh::EndpointAddr;
-use iroh_tickets::Ticket as _;
+use iroh_tickets::Ticket;
 
 use crate::errors;
 
@@ -37,7 +37,7 @@ impl EndpointTicket {
 
     /// Parse an [`EndpointTicket`] from its string presentation.
     pub fn from_string(str: String) -> Result<Self, errors::IrohError> {
-        let ticket = iroh_tickets::endpoint::EndpointTicket::deserialize(&str)?;
+        let ticket = iroh_tickets::endpoint::EndpointTicket::decode_string(&str)?;
         Ok(EndpointTicket(ticket))
     }
 

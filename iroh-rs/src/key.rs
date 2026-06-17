@@ -4,10 +4,9 @@ use std::{
     sync::Arc,
 };
 
-use iroh::endpoint;
 use safer_ffi::derive_ReprC;
 use serde::{Deserialize, Serialize};
-use crate::errors::IrohError;
+use crate::IrohError;
 
 
 
