@@ -11,10 +11,11 @@ mod net;
 mod ticket;
 mod accept;
 mod connection;
+mod relay;
 
 
 pub use self::{
-    accept::*, endpoint::*, errors::*, key::*, net::*, ticket::*, connection::*,
+    accept::*, endpoint::*, errors::*, key::*, net::*, ticket::*, connection::*, relay::*,
 };
 
 #[ffi_export]

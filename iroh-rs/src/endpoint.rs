@@ -377,13 +377,13 @@ impl Endpoint {
         self.inner.online().await;
     }
 
-    // /// Insert (or replace) a relay configuration at runtime.
-    // pub async fn insert_relay(&self, config: RelayConfig) -> Result<(), IrohError> {
-    //     let config: iroh::RelayConfig = config.try_into()?;
-    //     let url = config.url.clone();
-    //     self.inner.insert_relay(url, Arc::new(config)).await;
-    //     Ok(())
-    // }
+    /// Insert (or replace) a relay configuration at runtime.
+    pub async fn insert_relay(&self, config: RelayConfig) -> Result<(), IrohError> {
+        let config: iroh::RelayConfig = config.try_into()?;
+        let url = config.url.clone();
+        self.inner.insert_relay(url, Arc::new(config)).await;
+        Ok(())
+    }
 
     // /// Remove a relay configuration at runtime. Returns true if a relay was
     // /// removed.
