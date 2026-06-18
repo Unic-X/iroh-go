@@ -12,8 +12,10 @@ mod ticket;
 mod accept;
 mod connection;
 mod relay;
+mod path;
+mod watch;
 
-
+use tracing_subscriber::filter::LevelFilter;
 pub use self::{
     accept::*, endpoint::*, errors::*, key::*, net::*, ticket::*, connection::*, relay::*,
 };
@@ -24,6 +26,16 @@ fn iroh_builder_new() -> repr_c::Box<EndpointBuilder> {
         EndpointBuilder::new(iroh::endpoint::Builder::empty())
     )
     .into()
+}
+
+#[derive(Debug)]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Off,
 }
 
 #[ffi_export]

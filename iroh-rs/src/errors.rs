@@ -54,3 +54,15 @@ from_iroh_err! {
     iroh_tickets::ParseError,
     n0_future::task::JoinError,
 }
+
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum CallbackError {
+    Error,
+}
+
+impl From<anyhow::Error> for CallbackError {
+    fn from(_e: anyhow::Error) -> Self {
+        CallbackError::Error
+    }
+}

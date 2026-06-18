@@ -1025,6 +1025,8 @@ dependencies = [
  "safer-ffi",
  "serde",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

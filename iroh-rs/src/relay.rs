@@ -13,12 +13,12 @@ use crate::IrohError;
 /// `url` must parse as a `RelayUrl` (HTTPS URL). `quic_port` enables QUIC
 /// address discovery when set; leaving it `None` disables it. `auth_token`
 /// becomes an `Authorization: Bearer ...` header on the upgrade request.
-#[derive(Debug, Clone, uniffi::Record)]
+#[derive(Debug, Clone)]
 pub struct RelayConfig {
     pub url: String,
-    #[uniffi(default = None)]
+   // #[uniffi(default = None)]
     pub quic_port: Option<u16>,
-    #[uniffi(default = None)]
+   // #[uniffi(default = None)]
     pub auth_token: Option<String>,
 }
 
@@ -50,8 +50,8 @@ impl From<&iroh::RelayConfig> for RelayConfig {
 ///
 /// Mirrors `iroh::RelayMap`. Construct with [`Self::empty`] or [`Self::from_urls`]
 /// and mutate with [`Self::insert`] / [`Self::remove`].
-#[derive(Debug, Clone, uniffi::Object)]
-#[uniffi::export(Display)]
+#[derive(Debug, Clone)]
+//#[uniffi::export(Display)]
 pub struct RelayMap(pub(crate) iroh::RelayMap);
 
 impl From<iroh::RelayMap> for RelayMap {
@@ -72,17 +72,16 @@ impl std::fmt::Display for RelayMap {
     }
 }
 
-#[uniffi::export]
 impl RelayMap {
     /// Create an empty relay map.
-    #[uniffi::constructor]
+   
     pub fn empty() -> Self {
         Self(iroh::RelayMap::empty())
     }
 
     /// Build a relay map from a list of relay URLs (each becomes a default
     /// [`RelayConfig`]).
-    #[uniffi::constructor]
+  
     pub fn from_urls(urls: Vec<String>) -> Result<Self, IrohError> {
         let map = iroh::RelayMap::try_from_iter(urls.iter().map(|s| s.as_str()))
             .map_err(anyhow::Error::from)?;
@@ -139,8 +138,7 @@ impl RelayMap {
 /// Configuration for which relay servers an endpoint uses.
 ///
 /// Mirrors `iroh::RelayMode`. Use one of the constructors below.
-#[derive(Debug, Clone, uniffi::Object)]
-#[uniffi::export(Display)]
+#[derive(Debug, Clone)]
 pub struct RelayMode(pub(crate) iroh::RelayMode);
 
 impl From<iroh::RelayMode> for RelayMode {
@@ -162,34 +160,33 @@ impl std::fmt::Display for RelayMode {
     }
 }
 
-#[uniffi::export]
 impl RelayMode {
     /// No relays — listening and dialing via relay are both disabled.
-    #[uniffi::constructor]
+  
     pub fn disabled() -> Self {
         Self(iroh::RelayMode::Disabled)
     }
 
     /// Use the n0 production relay map.
-    #[uniffi::constructor]
+  
     pub fn default_mode() -> Self {
         Self(iroh::RelayMode::Default)
     }
 
     /// Use the n0 staging relay map.
-    #[uniffi::constructor]
+    
     pub fn staging() -> Self {
         Self(iroh::RelayMode::Staging)
     }
 
     /// Use a custom relay map.
-    #[uniffi::constructor]
+    
     pub fn custom(map: &RelayMap) -> Self {
         Self(iroh::RelayMode::Custom(map.0.clone()))
     }
 
     /// Build a custom relay mode directly from a list of relay URLs.
-    #[uniffi::constructor]
+ 
     pub fn custom_from_urls(urls: Vec<String>) -> Result<Self, IrohError> {
         let urls: Vec<iroh::RelayUrl> = urls
             .into_iter()
