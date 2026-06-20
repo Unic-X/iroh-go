@@ -7,7 +7,7 @@ use iroh::{
 
 use safer_ffi::{derive_ReprC, prelude::repr_c};
 use std::{str::FromStr, sync::{Arc, Mutex}};
-use crate::{EndpointAddr, EndpointId, Incoming, IrohError, SecretKey, Connection};
+use crate::{EndpointAddr, EndpointId, Incoming, IrohError, SecretKey, Connection, RelayConfig};
 
 #[derive_ReprC]
 #[repr(opaque)]

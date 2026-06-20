@@ -15,9 +15,10 @@ mod relay;
 mod path;
 mod watch;
 
+
 use tracing_subscriber::filter::LevelFilter;
 pub use self::{
-    accept::*, endpoint::*, errors::*, key::*, net::*, ticket::*, connection::*, relay::*,
+    accept::*, endpoint::*, errors::*, key::*, net::*, ticket::*, connection::*, relay::*,path::*, runtime::*
 };
 
 #[ffi_export]

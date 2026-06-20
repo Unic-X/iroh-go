@@ -1,11 +1,15 @@
 use std::fmt;
-use safer_ffi::derive_ReprC;
+
+use safer_ffi::{
+    derive_ReprC,
+    prelude::*,
+};
 
 #[derive_ReprC]
-#[repr(opaque)]
-#[derive(Debug)]
+#[repr(C)]
+#[derive(Debug, Clone)]
 pub struct IrohError {
-    e: anyhow::Error,
+    pub message: repr_c::String,
 }
 
 macro_rules! from_iroh_err {
@@ -14,7 +18,7 @@ macro_rules! from_iroh_err {
             impl From<$path> for IrohError {
                 fn from(value: $path) -> Self {
                     Self {
-                        e: anyhow::anyhow!("{:?}", value),
+                        message: format!("{:?}", value).into(),
                     }
                 }
             }
@@ -24,16 +28,19 @@ macro_rules! from_iroh_err {
 
 impl From<anyhow::Error> for IrohError {
     fn from(e: anyhow::Error) -> Self {
-        Self { e }
+        Self {
+            message: e.to_string().into(),
+        }
     }
 }
 
 impl fmt::Display for IrohError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.e)
+        write!(f, "{}", self.message)
     }
 }
 
+impl std::error::Error for IrohError {}
 
 from_iroh_err! {
     iroh::endpoint::BindError,
@@ -55,7 +62,6 @@ from_iroh_err! {
     n0_future::task::JoinError,
 }
 
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum CallbackError {
     Error,
@@ -64,5 +70,60 @@ pub enum CallbackError {
 impl From<anyhow::Error> for CallbackError {
     fn from(_e: anyhow::Error) -> Self {
         CallbackError::Error
+    }
+}
+
+
+#[derive_ReprC]
+#[repr(u8)]
+pub enum IrohResultTag {
+    Ok,
+    Error,
+}
+
+#[derive_ReprC]
+#[repr(C)]
+pub struct IrohResult<T>
+where
+    T: ReprC,
+{
+    pub tag: IrohResultTag,
+    pub value: repr_c::TaggedOption<T>,
+    pub error: repr_c::TaggedOption<IrohError>,
+}
+
+impl<T> IrohResult<T>
+where
+    T: ReprC,
+{
+    pub fn ok(value: T) -> Self {
+        Self {
+            tag: IrohResultTag::Ok,
+            value: Some(value).into(),
+            error: None.into(),
+        }
+    }
+
+    pub fn err(error: IrohError) -> Self {
+        Self {
+            tag: IrohResultTag::Error,
+            value: None.into(),
+            error: Some(error).into(),
+        }
+    }
+}
+
+impl<T> IrohResult<T>
+where
+    T: ReprC,
+{
+    pub fn from_result<E>(r: Result<T, E>) -> Self
+    where
+        E: Into<IrohError>,
+    {
+        match r {
+            Ok(v) => Self::ok(v),
+            Err(e) => Self::err(e.into()),
+        }
     }
 }

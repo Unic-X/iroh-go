@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 iroh = {version = "1.0.0" }
 iroh-base = { version = "1.0.0", features = ["key"] }
 tokio = { version = "1", features = ["full"] }
-safer-ffi = { version = "0.1", features = ["headers"] }
+safer-ffi = { version = "0.1", features = ["headers","async-fn"] }
 once_cell = "1"
 iroh-tickets = { version = "1.0.0" }
 anyhow = "1.0.102"
