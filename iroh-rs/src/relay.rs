@@ -6,6 +6,8 @@
 
 use std::{str::FromStr, sync::Arc};
 
+use safer_ffi::derive_ReprC;
+
 use crate::IrohError;
 
 /// Config for a single relay server.
@@ -13,12 +15,12 @@ use crate::IrohError;
 /// `url` must parse as a `RelayUrl` (HTTPS URL). `quic_port` enables QUIC
 /// address discovery when set; leaving it `None` disables it. `auth_token`
 /// becomes an `Authorization: Bearer ...` header on the upgrade request.
+#[derive_ReprC]
+#[repr(opaque)]
 #[derive(Debug, Clone)]
 pub struct RelayConfig {
     pub url: String,
-   // #[uniffi(default = None)]
     pub quic_port: Option<u16>,
-   // #[uniffi(default = None)]
     pub auth_token: Option<String>,
 }
 

@@ -102,7 +102,8 @@ impl From<iroh::endpoint::LocalTransportAddr> for IncomingLocalAddr {
 ///
 /// Consume via [`Self::accept`] / [`Self::refuse`] / [`Self::retry`] / [`Self::ignore`].
 /// Each `Incoming` can only be consumed once.
-
+#[derive_ReprC]
+#[repr(opaque)]
 pub struct Incoming(Mutex<Option<iroh::endpoint::Incoming>>);
 
 impl Incoming {
@@ -234,7 +235,8 @@ impl Accepting {
 }
 
 /// A client-side handshake in progress. Await with [`Self::connect`].
-
+#[derive_ReprC]
+#[repr(opaque)]
 pub struct Connecting(Mutex<Option<iroh::endpoint::Connecting>>);
 
 impl Connecting {

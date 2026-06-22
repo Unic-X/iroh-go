@@ -3,7 +3,7 @@
 //! Mirrors the path-watcher surface from `iroh::endpoint::Connection::paths()`
 //! and its associated streams. Paths are exposed as owned snapshots so they can
 //! cross the FFI boundary without lifetime issues.
-
+use std::sync::Arc;
 use ::safer_ffi::prelude::*;
 use iroh::endpoint::LocalTransportAddr;
 use iroh_base::TransportAddr;
@@ -170,6 +170,7 @@ impl From<iroh::endpoint::PathEvent> for PathEvent {
 
 /// Callback for `Connection::watch_paths` — fires whenever the open-paths
 /// snapshot changes (path opens/closes/selection changes).
+#[async_trait::async_trait]
 
 pub trait PathChangeCallback: Send + Sync + 'static {
     async fn on_change(&self, paths: Vec<PathSnapshot>) -> Result<(), CallbackError>;
@@ -177,12 +178,13 @@ pub trait PathChangeCallback: Send + Sync + 'static {
 
 /// Callback for `Connection::watch_path_events` — fires for each individual
 /// path events
+#[async_trait::async_trait]
 
 pub trait PathEventCallback: Send + Sync + 'static {
     async fn on_event(&self, event: PathEvent) -> Result<(), CallbackError>;
 }
 
-#[ffi_export]
+
 pub(crate) fn snapshot_paths(conn: iroh::endpoint::Connection) -> Vec<PathSnapshot> {
     conn.paths()
         .iter()
@@ -202,10 +204,10 @@ pub(crate) fn snapshot_paths(conn: iroh::endpoint::Connection) -> Vec<PathSnapsh
 }
 
 
-#[ffi_export]
+
 pub(crate) fn spawn_paths_watch(
     conn: iroh::endpoint::Connection,
-    cb: VirtualPtr<dyn PathChangeCallback>,
+    cb: Arc<dyn PathChangeCallback>,
 ) -> WatchHandle {
     let task = n0_future::task::spawn(async move {
         let mut stream = conn.paths_stream();
@@ -234,10 +236,10 @@ pub(crate) fn spawn_paths_watch(
     WatchHandle::new(AbortOnDropHandle::new(task))
 }
 
-#[ffi_export]
+
 pub(crate) fn spawn_path_events_watch(
     conn: iroh::endpoint::Connection,
-    cb: VirtualPtr<dyn PathEventCallback>,
+    cb: Arc<dyn PathEventCallback>,
 ) -> WatchHandle {
     let task = n0_future::task::spawn(async move {
         let mut stream = conn.path_events();

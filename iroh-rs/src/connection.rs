@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use iroh::endpoint;
-use safer_ffi::{derive_ReprC};
-use ::safer_ffi::prelude::*;
+use safer_ffi::{derive_ReprC, ffi_export, prelude::{c_slice, repr_c}};
 
 use tokio::sync::Mutex;
-use crate::{ConnectionStats, EndpointId, IrohError, Side,PathSnapshot,path, IrohResult};
+use crate::{ConnectionStats, EndpointId, IrohError, IrohResult, PathChangeCallback, PathEventCallback, PathSnapshot, Side, path, watch::WatchHandle};
 
 #[derive_ReprC]
 #[repr(opaque)]
@@ -16,8 +15,6 @@ impl From<endpoint::Connection> for Connection {
         Self(value)
     }
 }
-
-
 
 impl Connection {
     /// The ALPN protocol negotiated for this connection.
@@ -146,20 +143,20 @@ impl Connection {
 
     /// A snapshot of all currently open network paths for this connection.
     pub fn paths(&self) -> Vec<PathSnapshot> {
-        path::snapshot_paths(self.0)
+        path::snapshot_paths(self.0.clone())
     }
 
     /// Register a callback that fires with the current set of open paths
     /// whenever the path list (or selected path) changes.
-    // pub fn watch_paths(&self, callback: Arc<dyn PathChangeCallback>) -> Arc<WatchHandle> {
-    //     Arc::new(path::spawn_paths_watch(self.0.clone(), callback))
-    // }
+    pub fn watch_paths(&self, callback: Arc<dyn PathChangeCallback>) -> Arc<WatchHandle> {
+        Arc::new(path::spawn_paths_watch(self.0.clone(), callback))
+    }
 
     // /// Register a callback that fires for each individual path event (path
     // /// opened, closed, selected, or lagged).
-    // pub fn watch_path_events(&self, callback: Arc<dyn PathEventCallback>) -> Arc<WatchHandle> {
-    //     Arc::new(path::spawn_path_events_watch(self.0.clone(), callback))
-    // }
+    pub fn watch_path_events(&self, callback: Arc<dyn PathEventCallback>) -> Arc<WatchHandle> {
+        Arc::new(path::spawn_path_events_watch(self.0.clone(), callback))
+    }
 
     /// Set the maximum number of concurrent incoming unidirectional streams.
     pub fn set_max_concurrent_uni_streams(&self, count: u64) -> Result<(), IrohError> {
@@ -182,7 +179,6 @@ impl Connection {
         Ok(())
     }
 }
-
 
 /// A bidirectional QUIC stream pair.
 #[derive_ReprC]
@@ -215,21 +211,18 @@ impl SendStream {
     }
 }
 
-
 /// Write some bytes, returning the number actually written.
-#[ffi_export(executor= crate::iroh_executor)]
-pub async fn write(stream: &SendStream, buf: c_slice::Ref<'_, u8>) -> IrohResult<u64> {
-    ffi_await!(async {
+#[ffi_export(executor = crate::iroh_executor)]
+pub async fn write_sendstream(stream: &SendStream, buf: c_slice::Ref<'_, u8>) -> IrohResult<u64> {
+    ffi_await!(async move {
         let mut s = stream.0.lock().await;
-        let bytes: &[u8] = buf.as_slice(); 
-
+        let bytes: &[u8] = buf.as_slice();
         IrohResult::from_result(
-            s.write(bytes)
-                .await
-                .map(|written| written as u64)
+            s.write(bytes).await.map(|written| written as u64)
         )
     })
 }
+
 
 /// Write all bytes, looping as needed.
 #[ffi_export(executor= crate::iroh_executor)]
@@ -248,35 +241,34 @@ pub async fn write_all(stream: &SendStream, buf: c_slice::Ref<'_, u8>) -> IrohRe
 }
 
 /// Signal that no more data will be sent on this stream.
-#[ffi_export(executor= crate::iroh_executor)]
+#[ffi_export(executor = crate::iroh_executor)]
 pub async fn finish(stream: &SendStream) -> IrohResult<()> {
-    ffi_await!(async {
+    ffi_await!(async{
         let mut s = stream.0.lock().await;
         IrohResult::from_result(
             s.finish()
         )
     })
 }
+
 /// Abort the stream with the given error code.
-#[ffi_export(executor= crate::iroh_executor)]
+#[ffi_export(executor = crate::iroh_executor)]
 pub async fn reset(stream: &SendStream, error_code: u64) -> IrohResult<()> {
-    ffi_await!(async  {
+    ffi_await!(async {
         let error_code = match endpoint::VarInt::from_u64(error_code) {
             Ok(v) => v,
             Err(e) => return IrohResult::err(e.into()),
         };
-
         let mut s = stream.0.lock().await;
-
         IrohResult::from_result(
             s.reset(error_code)
         )
     })
 }
 
-#[ffi_export(executor= crate::iroh_executor)]
+#[ffi_export(executor = crate::iroh_executor)]
 pub async fn set_priority(stream: &SendStream, p: i32) -> IrohResult<()> {
-    ffi_await!(async  {
+    ffi_await!(async {
         let s = stream.0.lock().await;
         IrohResult::from_result(
             s.set_priority(p)
@@ -315,7 +307,6 @@ pub async fn id(stream: &SendStream) -> repr_c::String {
     })
 }
 
-
 /// The incoming half of a QUIC stream.
 
 #[derive_ReprC]
@@ -330,7 +321,7 @@ impl RecvStream {
 }
 
 #[ffi_export(executor= crate::iroh_executor)]
-pub async fn read(stream: &RecvStream, size_limit: u32) -> IrohResult<repr_c::Vec<u8>> {
+pub async fn read_resvstream(stream: &RecvStream, size_limit: u32) -> IrohResult<repr_c::Vec<u8>> {
     ffi_await!(async  {
         let mut buf = vec![0u8; size_limit as _];
         let mut r = stream.0.lock().await;

@@ -1017,8 +1017,10 @@ name = "go_iroh"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "iroh",
  "iroh-base",
+ "iroh-relay",
  "iroh-tickets",
  "n0-future",
  "once_cell",

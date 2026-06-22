@@ -16,64 +16,30 @@ extern "C" {
 /** <No documentation available> */
 typedef struct EndpointBuilder EndpointBuilder_t;
 
-
-#include <stdbool.h>
-
-/** <No documentation available> */
-bool
-iroh_builder_add_alpn (
-    EndpointBuilder_t const * builder,
-    char const * alpn);
-
-/** <No documentation available> */
+/** \brief
+ *  Replay the minimal preset (crypto provider only, no external deps).
+ */
 void
-iroh_builder_apply_minimal (
+apply_minimal (
     EndpointBuilder_t const * builder);
 
-/** <No documentation available> */
+/** \brief
+ *  Replay the n0 production preset (relays + discovery + crypto provider).
+ */
 void
-iroh_builder_apply_n0 (
+apply_n0 (
     EndpointBuilder_t const * builder);
 
-/** <No documentation available> */
-bool
-iroh_builder_bind_addr (
-    EndpointBuilder_t const * builder,
-    char const * addr);
-
-/** <No documentation available> */
-EndpointBuilder_t *
-iroh_builder_new (void);
+/** \brief
+ *  Replay the n0 preset with relays disabled.
+ */
+void
+apply_n0_disable_relay (
+    EndpointBuilder_t const * builder);
 
 
 #include <stddef.h>
 #include <stdint.h>
-
-/** <No documentation available> */
-void
-iroh_builder_relay_mode (
-    EndpointBuilder_t const * builder,
-    uint8_t mode);
-
-/** \brief
- *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
- */
-typedef struct Vec_uint8 {
-    /** <No documentation available> */
-    uint8_t * ptr;
-
-    /** <No documentation available> */
-    size_t len;
-
-    /** <No documentation available> */
-    size_t cap;
-} Vec_uint8_t;
-
-/** <No documentation available> */
-bool
-iroh_builder_secret_key (
-    EndpointBuilder_t const * builder,
-    Vec_uint8_t key);
 
 /** <No documentation available> */
 /** \remark Has the same ABI as `uint8_t` **/
@@ -94,6 +60,195 @@ enum Preset {
 ; typedef uint8_t
 #endif
 Preset_t;
+
+/** \brief
+ *  Configures a freshly created [`EndpointBuilder`].
+ *
+ *  This mirrors the upstream `iroh::endpoint::presets::Preset` trait and is
+ *  implementable from the foreign language: implement `apply` to configure the
+ *  builder however you like (typically calling one of the
+ *  [`EndpointBuilder::apply_n0`] / `apply_minimal` / `apply_n0_disable_relay`
+ *  baselines first, since those install the crypto provider). The built-in
+ *  presets are available as [`preset_n0`], [`preset_minimal`], and
+ *  [`preset_n0_disable_relay`].
+ */
+void
+apply_preset (
+    Preset_t const * preset,
+    EndpointBuilder_t const * builder);
+
+/** \brief
+ *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
+ */
+typedef struct Vec_uint8 {
+    /** <No documentation available> */
+    uint8_t * ptr;
+
+    /** <No documentation available> */
+    size_t len;
+
+    /** <No documentation available> */
+    size_t cap;
+} Vec_uint8_t;
+
+/** <No documentation available> */
+/** \remark Has the same ABI as `uint8_t` **/
+#ifdef DOXYGEN
+typedef
+#endif
+enum IrohResultTag {
+    /** <No documentation available> */
+    IROH_RESULT_TAG_OK,
+    /** <No documentation available> */
+    IROH_RESULT_TAG_ERROR,
+}
+#ifndef DOXYGEN
+; typedef uint8_t
+#endif
+IrohResultTag_t;
+
+
+#include <stdbool.h>
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_void {
+    /** <No documentation available> */
+    bool _0;
+} Tuple2_bool_void_t;
+
+/** <No documentation available> */
+typedef struct IrohError {
+    /** <No documentation available> */
+    Vec_uint8_t message;
+} IrohError_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_IrohError {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    IrohError_t _1;
+} Tuple2_bool_IrohError_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_void {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_void_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_void_t;
+
+/** \brief
+ *  Set the address the endpoint binds to (`host:port`).
+ */
+IrohResult_void_t
+bind_addr (
+    EndpointBuilder_t const * builder,
+    Vec_uint8_t addr);
+
+/** \brief
+ *  The incoming half of a QUIC stream.
+ */
+typedef struct RecvStream RecvStream_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_uint64 {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    uint64_t _1;
+} Tuple2_bool_uint64_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_uint64 {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_uint64_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_uint64_t;
+
+/** <No documentation available> */
+IrohResult_uint64_t
+bytes_read (
+    RecvStream_t const * stream);
+
+/** <No documentation available> */
+typedef struct Endpoint Endpoint_t;
+
+/** \brief
+ *  An incoming connection that has not yet begun its server-side handshake.
+ *
+ *  Consume via [`Self::accept`] / [`Self::refuse`] / [`Self::retry`] / [`Self::ignore`].
+ *  Each `Incoming` can only be consumed once.
+ */
+typedef struct Incoming Incoming_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Incoming_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Incoming_t * _1;
+} Tuple2_bool_Incoming_ptr_t;
+
+/** \brief
+ *  Pull the next incoming connection attempt from the accept queue.
+ *
+ *  Returns `None` once the endpoint is closed. Use this for a custom accept
+ *  loop instead of (or in addition to) registering protocol handlers via
+ *  [`EndpointOptions::protocols`].
+ */
+Tuple2_bool_Incoming_ptr_t
+endpoint_accept_next (
+    Endpoint_t const * ep);
+
+/** \brief
+ *  Add an external (manually-known) socket address that this endpoint is
+ *  reachable on. Useful when running behind a static NAT / load balancer.
+ */
+IrohResult_void_t
+endpoint_add_external_addr (
+    Endpoint_t const * ep,
+    Vec_uint8_t addr);
+
+/** \brief
+ *  An endpoint's id together with the network-level addresses where it can be reached.
+ *
+ *  Mirrors `iroh::EndpointAddr` — exposes a flat view over the underlying set of
+ *  `TransportAddr`s (one relay URL plus a list of IP/port pairs).
+ */
+typedef struct EndpointAddr EndpointAddr_t;
+
+/** \brief
+ *  The [`EndpointAddr`] for this endpoint (id + currently known addresses).
+ *  MIGHT BE BUGGY?
+ */
+EndpointAddr_t *
+endpoint_addr (
+    Endpoint_t const * ep);
 
 /** \brief
  *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
@@ -122,7 +277,6 @@ enum RelayModeFFI {
     RELAY_MODE_F_F_I_DISABLED = 0,
     /** \brief
      *  Use the default relay map, with production relay servers from n0.
-     *
      *  See [`crate::defaults::prod`] for the severs used.
      */
     RELAY_MODE_F_F_I_DEFAULT = 1,
@@ -135,6 +289,35 @@ enum RelayModeFFI {
 ; typedef uint8_t
 #endif
 RelayModeFFI_t;
+
+/** <No documentation available> */
+typedef struct Connection Connection_t;
+
+/** <No documentation available> */
+typedef struct ProtocolHandler {
+    /** <No documentation available> */
+    Vec_uint8_t alpn;
+
+    /** <No documentation available> */
+    bool (*on_accept)(Connection_t *);
+
+    /** <No documentation available> */
+    void (*on_shutdown)(void);
+} ProtocolHandler_t;
+
+/** \brief
+ *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
+ */
+typedef struct Vec_ProtocolHandler {
+    /** <No documentation available> */
+    ProtocolHandler_t * ptr;
+
+    /** <No documentation available> */
+    size_t len;
+
+    /** <No documentation available> */
+    size_t cap;
+} Vec_ProtocolHandler_t;
 
 /** <No documentation available> */
 typedef struct EndpointOptions {
@@ -166,15 +349,478 @@ typedef struct EndpointOptions {
      *  chosen [`Preset`] configures.
      */
     RelayModeFFI_t relay_mode;
+
+    /** <No documentation available> */
+    Vec_ProtocolHandler_t protocols;
 } EndpointOptions_t;
 
-/** <No documentation available> */
-typedef struct Endpoint Endpoint_t;
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Endpoint_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Endpoint_t * _1;
+} Tuple2_bool_Endpoint_ptr_t;
 
 /** <No documentation available> */
-Endpoint_t *
-iroh_endpoint_bind (
-    EndpointOptions_t * options);
+typedef struct IrohResult_Endpoint_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Endpoint_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Endpoint_ptr_t;
+
+/** \brief
+ *  Bind a new endpoint with the given options.
+ */
+IrohResult_Endpoint_ptr_t
+endpoint_bind (
+    EndpointOptions_t const * options);
+
+/** \brief
+ *  The layout of `alloc::string::String` is opaque/subject to changes.
+ */
+typedef struct Opaque_String Opaque_String_t;
+
+/** \brief
+ *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
+ */
+typedef struct Vec_Opaque_String {
+    /** <No documentation available> */
+    Opaque_String_t * ptr;
+
+    /** <No documentation available> */
+    size_t len;
+
+    /** <No documentation available> */
+    size_t cap;
+} Vec_Opaque_String_t;
+
+/** \brief
+ *  The local socket addresses this endpoint is bound to.
+ */
+Vec_Opaque_String_t
+endpoint_bound_sockets (
+    Endpoint_t const * ep);
+
+/** <No documentation available> */
+void
+endpoint_builder_free (
+    EndpointBuilder_t * builder);
+
+/** <No documentation available> */
+EndpointBuilder_t *
+endpoint_builder_new (void);
+
+/** <No documentation available> */
+IrohResult_void_t
+endpoint_close (
+    Endpoint_t const * ep);
+
+/** \brief
+ *  `&'lt [T]` but with a guaranteed `#[repr(C)]` layout.
+ *
+ *  # C layout (for some given type T)
+ *
+ *  ```c
+ *  typedef struct {
+ *  // Cannot be NULL
+ *  T * ptr;
+ *  size_t len;
+ *  } slice_T;
+ *  ```
+ *
+ *  # Nullable pointer?
+ *
+ *  If you want to support the above typedef, but where the `ptr` field is
+ *  allowed to be `NULL` (with the contents of `len` then being undefined)
+ *  use the `Option< slice_ptr<_> >` type.
+ */
+typedef struct slice_ref_uint8 {
+    /** \brief
+     *  Pointer to the first element (if any).
+     */
+    uint8_t const * ptr;
+
+    /** \brief
+     *  Element count
+     */
+    size_t len;
+} slice_ref_uint8_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Connection_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Connection_t * _1;
+} Tuple2_bool_Connection_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Connection_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Connection_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Connection_ptr_t;
+
+/** \brief
+ *  Connect to a remote endpoint via the given ALPN.
+ */
+IrohResult_Connection_ptr_t
+endpoint_connect (
+    Endpoint_t const * ep,
+    EndpointAddr_t const * addr,
+    slice_ref_uint8_t alpn);
+
+/** \brief
+ *  A client-side handshake in progress. Await with [`Self::connect`].
+ */
+typedef struct Connecting Connecting_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Connecting_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Connecting_t * _1;
+} Tuple2_bool_Connecting_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Connecting_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Connecting_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Connecting_ptr_t;
+
+/** <No documentation available> */
+IrohResult_Connecting_ptr_t
+endpoint_connect_pending (
+    Endpoint_t const * ep,
+    EndpointAddr_t const * addr,
+    slice_ref_uint8_t alpn);
+
+typedef struct {
+    uint8_t idx[32];
+} uint8_32_array_t;
+
+/** \brief
+ *  An endpoint's identifier, a 32-byte ed25519 public key.
+ *
+ *  In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
+ *  and uniquely identifies an [`Endpoint`](crate::Endpoint).
+ */
+typedef struct EndpointId {
+    /** <No documentation available> */
+    uint8_32_array_t key;
+} EndpointId_t;
+
+/** \brief
+ *  The [`EndpointId`] of this endpoint.
+ */
+EndpointId_t
+endpoint_id (
+    Endpoint_t const * ep);
+
+/** \brief
+ *  Config for a single relay server.
+ *
+ *  `url` must parse as a `RelayUrl` (HTTPS URL). `quic_port` enables QUIC
+ *  address discovery when set; leaving it `None` disables it. `auth_token`
+ *  becomes an `Authorization: Bearer ...` header on the upgrade request.
+ */
+typedef struct RelayConfig RelayConfig_t;
+
+/** \brief
+ *  Insert (or replace) a relay configuration at runtime.
+ */
+IrohResult_void_t
+endpoint_insert_relay (
+    Endpoint_t const * ep,
+    RelayConfig_t * config);
+
+/** <No documentation available> */
+bool
+endpoint_is_closed (
+    Endpoint_t const * ep);
+
+/** \brief
+ *  Resolves once the endpoint has a usable home relay.
+ */
+void
+endpoint_online (
+    Endpoint_t const * ep);
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_bool {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    bool _1;
+} Tuple2_bool_bool_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_bool {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_bool_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_bool_t;
+
+/** \brief
+ *  Remove a previously-added external address. Returns true if an entry was
+ *  removed.
+ */
+IrohResult_bool_t
+endpoint_remove_external_addr (
+    Endpoint_t const * ep,
+    Vec_uint8_t addr);
+
+/** \brief
+ *  Remove a relay configuration at runtime. Returns true if a relay was
+ *  removed.
+ */
+IrohResult_bool_t
+endpoint_remove_relay (
+    Endpoint_t const * ep,
+    Vec_uint8_t url);
+
+/** \brief
+ *  The secret key half of an endpoint identity.
+ *
+ *  Mirrors `iroh::SecretKey`. Used internally by [`Endpoint`](crate::Endpoint) to
+ *  produce its TLS certificate and to sign arbitrary messages.
+ */
+typedef struct SecretKey SecretKey_t;
+
+/** \brief
+ *  Get The [`SecretKey`] backing this endpoint's identity.
+ */
+SecretKey_t *
+endpoint_secret_key (
+    Endpoint_t const * ep);
+
+/** \brief
+ *  The outgoing half of a QUIC stream.
+ */
+typedef struct SendStream SendStream_t;
+
+/** \brief
+ *  Signal that no more data will be sent on this stream.
+ */
+IrohResult_void_t
+finish (
+    SendStream_t const * stream);
+
+/** <No documentation available> */
+Vec_uint8_t
+id (
+    SendStream_t const * stream);
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_int32 {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    int32_t _1;
+} Tuple2_bool_int32_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_int32 {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_int32_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_int32_t;
+
+/** <No documentation available> */
+IrohResult_int32_t
+priority (
+    SendStream_t const * stream);
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Vec_uint8 {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Vec_uint8_t _1;
+} Tuple2_bool_Vec_uint8_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Vec_uint8 {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Vec_uint8_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Vec_uint8_t;
+
+/** <No documentation available> */
+IrohResult_Vec_uint8_t
+read_exact (
+    RecvStream_t const * stream,
+    uint32_t size);
+
+/** <No documentation available> */
+IrohResult_Vec_uint8_t
+read_resvstream (
+    RecvStream_t const * stream,
+    uint32_t size_limit);
+
+/** <No documentation available> */
+IrohResult_Vec_uint8_t
+read_to_end (
+    RecvStream_t const * stream,
+    uint32_t size_limit);
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Tuple2_bool_uint64 {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Tuple2_bool_uint64_t _1;
+} Tuple2_bool_Tuple2_bool_uint64_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Tuple2_bool_uint64 {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Tuple2_bool_uint64_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Tuple2_bool_uint64_t;
+
+/** <No documentation available> */
+IrohResult_Tuple2_bool_uint64_t
+received_reset (
+    RecvStream_t const * stream);
+
+/** <No documentation available> */
+Vec_uint8_t
+recv_id (
+    RecvStream_t const * stream);
+
+/** \brief
+ *  Set the relay mode.
+ */
+void
+relay_mode (
+    EndpointBuilder_t const * builder,
+    RelayModeFFI_t mode);
+
+/** \brief
+ *  Abort the stream with the given error code.
+ */
+IrohResult_void_t
+reset (
+    SendStream_t const * stream,
+    uint64_t error_code);
+
+/** \brief
+ *  Set the endpoint secret key (32 bytes).
+ */
+IrohResult_void_t
+secret_key (
+    EndpointBuilder_t const * builder,
+    Vec_uint8_t key);
+
+/** \brief
+ *  Set the advertised ALPNs.
+ */
+void
+set_alpns (
+    EndpointBuilder_t const * builder,
+    Vec_Vec_uint8_t alpns);
+
+/** <No documentation available> */
+IrohResult_void_t
+set_priority (
+    SendStream_t const * stream,
+    int32_t p);
+
+/** \brief
+ *  Stop the incoming stream with an error code
+ */
+IrohResult_void_t
+stop (
+    RecvStream_t const * stream,
+    uint64_t error_code);
+
+/** <No documentation available> */
+IrohResult_Tuple2_bool_uint64_t
+stopped (
+    SendStream_t const * stream);
+
+/** \brief
+ *  Write all bytes, looping as needed.
+ */
+IrohResult_void_t
+write_all (
+    SendStream_t const * stream,
+    slice_ref_uint8_t buf);
+
+/** \brief
+ *  Write some bytes, returning the number actually written.
+ */
+IrohResult_uint64_t
+write_sendstream (
+    SendStream_t const * stream,
+    slice_ref_uint8_t buf);
 
 
 #ifdef __cplusplus

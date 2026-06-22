@@ -127,3 +127,14 @@ where
         }
     }
 }
+
+impl<T: ReprC> IrohResult<T> {
+    pub fn unwrap(self) -> T {
+        match self.tag {
+            IrohResultTag::Ok => self.value.into_rust().unwrap(),
+            IrohResultTag::Error => {
+                panic!("{:?}", self.error.into_rust().unwrap())
+            }
+        }
+    }
+}

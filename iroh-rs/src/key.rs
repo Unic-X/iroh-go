@@ -8,15 +8,13 @@ use safer_ffi::derive_ReprC;
 use serde::{Deserialize, Serialize};
 use crate::IrohError;
 
-
-
 /// An endpoint's identifier, a 32-byte ed25519 public key.
 ///
 /// In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
 /// and uniquely identifies an [`Endpoint`](crate::Endpoint).
 #[derive_ReprC]
-#[repr(opaque)]
-#[derive( Debug,Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[repr(C)]
+#[derive( Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct EndpointId {
     pub key: [u8; 32],
 }
@@ -42,10 +40,14 @@ impl EndpointId {
     }
 
     /// Parse an [`EndpointId`] from its base32 representation.
-   
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         let key = iroh::EndpointId::from_str(&s)?;
         Ok(key.into())
+    }
+
+    /// Returns the public key as a base32 string.
+    pub fn as_base32(&self)-> String{
+        iroh::PublicKey::from(self).to_string()
     }
 
     /// Construct an [`EndpointId`] from raw bytes.
@@ -75,6 +77,8 @@ impl EndpointId {
 ///
 /// Mirrors `iroh::SecretKey`. Used internally by [`Endpoint`](crate::Endpoint) to
 /// produce its TLS certificate and to sign arbitrary messages.
+#[derive_ReprC]
+#[repr(opaque)]
 #[derive(Debug, Clone)]
 pub struct SecretKey{
     inner:  iroh::SecretKey,
