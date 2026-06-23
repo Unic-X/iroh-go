@@ -1,41 +1,13 @@
 package iroh
 
-import (
-	"runtime"
-
-	"go-iroh/internal/ffi"
-)
+/*
+#include <stdlib.h>
+#include <stddef.h>
+#cgo linux LDFLAGS: -L${SRCDIR}/../../iroh-rs/target/release -lgo_iroh
+#include "../iroh-rs/include/iroh.h"
+*/
+import "C"
 
 type Endpoint struct {
-	handle ffi.EndpointHandle
-}
-
-func NewEndpoint() (*Endpoint, error) {
-	h := ffi.EndpointNew()
-
-	e := &Endpoint{
-		handle: h,
-	}
-
-	runtime.AddCleanup(e, func(h ffi.EndpointHandle) {
-		ffi.EndpointFree(h)
-	}, e.handle)
-
-	return e, nil
-}
-
-func (e *Endpoint) Close() error {
-	if e.handle == 0 {
-		return nil
-	}
-
-	ffi.EndpointFree(e.handle)
-
-	e.handle = 0
-
-	return nil
-}
-
-func (e *Endpoint) NodeId() (string, error) {
-	return ffi.EndpointNodeId(e.handle)
+	ptr *C.EndpointBuilder_t
 }

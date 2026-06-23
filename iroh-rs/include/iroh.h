@@ -525,6 +525,11 @@ endpoint_connect_pending (
     EndpointAddr_t const * addr,
     slice_ref_uint8_t alpn);
 
+/** <No documentation available> */
+void
+endpoint_free (
+    Endpoint_t * ep);
+
 typedef struct {
     uint8_t idx[32];
 } uint8_32_array_t;

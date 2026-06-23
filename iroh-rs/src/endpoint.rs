@@ -592,6 +592,11 @@ pub async fn endpoint_close(ep: &Endpoint) -> IrohResult<()> {
 }
 
 #[ffi_export]
+pub fn endpoint_free(ep: repr_c::Box<Endpoint>) {
+    drop(ep)
+}
+
+#[ffi_export]
 pub fn endpoint_is_closed(ep: &Endpoint) -> bool {
     ep.is_closed()
 }
