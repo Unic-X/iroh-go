@@ -1,29 +1,18 @@
-.PHONY: rust go test clean
+.PHONY: build-rust run test clean
 
-ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-IROH_RS_DIR := $(ROOT_DIR)/iroh-rs
-IROH_LIB_DIR := $(IROH_RS_DIR)/target/release
+build-rust:
+	@cd iroh-rs && cargo build --release
 
-export LD_LIBRARY_PATH := $(IROH_LIB_DIR):$(LD_LIBRARY_PATH)
+run: build-rust
+	@CGO_LDFLAGS="-L$(shell pwd)/iroh-rs/target/release" \
+	LD_LIBRARY_PATH="$(shell pwd)/iroh-rs/target/release" \
+	go run examples/main.go
 
-rust:
-	cd $(IROH_RS_DIR) && cargo build --release
-
-go:
-	go build ./...
-
-rust-test: rust
-	cd $(IROH_RS_DIR) && cargo test
-
-go-test:
-	go test ./...
-
-test: rust-test go-test
+test: build-rust
+	@CGO_LDFLAGS="-L$(shell pwd)/iroh-rs/target/release" \
+	LD_LIBRARY_PATH="$(shell pwd)/iroh-rs/target/release" \
+	go test -v ./...
 
 clean:
-	rm -rf $(IROH_RS_DIR)/target
-	go clean
-
-clean-cache:
-	go clean -cache -testcache -modcache
-	rm -rf ~/.cache/go-build
+	@cd iroh-rs && cargo clean
+	@go clean

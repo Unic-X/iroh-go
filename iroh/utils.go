@@ -37,22 +37,33 @@ func ToVec[T Iterable](s T) C.Vec_uint8_t {
 	}
 }
 
-func VecToString(v C.Vec_uint8_t) string {
-	if v.ptr == nil || v.len == 0 {
-		return ""
+func ToVecVec[T Iterable](items []T) C.Vec_Vec_uint8_t {
+	if len(items) == 0 {
+		return C.Vec_Vec_uint8_t{}
 	}
 
-	bytes := unsafe.Slice(
-		(*byte)(unsafe.Pointer(v.ptr)),
-		int(v.len),
-	)
+	elemSize := C.size_t(unsafe.Sizeof(C.Vec_Vec_uint8_t{}))
+	totalSize := C.size_t(len(items)) * elemSize
 
-	return string(bytes)
+	cArrayPtr := (*C.Vec_uint8_t)(C.malloc(totalSize))
+
+	cSlice := unsafe.Slice(cArrayPtr, len(items))
+
+	for i, item := range items {
+		cSlice[i] = ToVec(item)
+	}
+
+	return C.Vec_Vec_uint8_t{
+		ptr: cArrayPtr,
+		len: C.size_t(len(items)),
+		cap: C.size_t(len(items)),
+	}
+
 }
 
 // Error Handling and Result Handling
 func ErrorFromC(err C.IrohError_t) error {
-	msg := VecToString(err.message)
+	msg := BytesToString(err.message)
 
 	// Free error message buffer if ownership was transferred.
 	FreeVec(err.message)
@@ -84,4 +95,50 @@ func ResultValue[T any](
 
 	var zero T
 	return zero, ErrorFromC(err)
+}
+
+func VecStringToSlice(v C.Vec_Vec_uint8_t) []string {
+	if v.ptr == nil || v.len == 0 {
+		return nil
+	}
+
+	strs := unsafe.Slice(
+		(*C.Vec_uint8_t)(unsafe.Pointer(v.ptr)),
+		int(v.len),
+	)
+
+	result := make([]string, 0, int(v.len))
+
+	for _, s := range strs {
+		result = append(result, BytesToString(s))
+	}
+
+	return result
+}
+
+func FreeVecVec(v C.Vec_Vec_uint8_t) {
+	if v.ptr == nil {
+		return
+	}
+
+	cSlice := unsafe.Slice(v.ptr, int(v.len))
+
+	for _, vec := range cSlice {
+		FreeVec(vec)
+	}
+
+	C.free(unsafe.Pointer(v.ptr))
+}
+
+func BytesToString(s C.Vec_uint8_t) string {
+	if s.ptr == nil || s.len == 0 {
+		return ""
+	}
+
+	bytes := unsafe.Slice(
+		(*byte)(unsafe.Pointer(s.ptr)),
+		int(s.len),
+	)
+
+	return string(bytes)
 }

@@ -627,8 +627,12 @@ pub async fn endpoint_remove_external_addr(ep: &Endpoint, addr: repr_c::String) 
 
 /// The local socket addresses this endpoint is bound to.
 #[ffi_export]
-pub fn endpoint_bound_sockets(ep: &Endpoint) -> repr_c::Vec<String> {
-    ep.bound_sockets().into()
+pub fn endpoint_bound_sockets(ep: &Endpoint) -> repr_c::Vec<repr_c::String> {
+    ep.bound_sockets()
+        .into_iter()
+        .map(repr_c::String::from) 
+        .collect::<Vec<_>>()
+        .into()
 }
 
 /// Resolves once the endpoint has a usable home relay.

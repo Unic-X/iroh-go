@@ -386,28 +386,9 @@ endpoint_bind (
     EndpointOptions_t const * options);
 
 /** \brief
- *  The layout of `alloc::string::String` is opaque/subject to changes.
- */
-typedef struct Opaque_String Opaque_String_t;
-
-/** \brief
- *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
- */
-typedef struct Vec_Opaque_String {
-    /** <No documentation available> */
-    Opaque_String_t * ptr;
-
-    /** <No documentation available> */
-    size_t len;
-
-    /** <No documentation available> */
-    size_t cap;
-} Vec_Opaque_String_t;
-
-/** \brief
  *  The local socket addresses this endpoint is bound to.
  */
-Vec_Opaque_String_t
+Vec_Vec_uint8_t
 endpoint_bound_sockets (
     Endpoint_t const * ep);
 
