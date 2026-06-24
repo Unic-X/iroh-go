@@ -4,7 +4,7 @@ use iroh::endpoint;
 use safer_ffi::{derive_ReprC, ffi_export, prelude::{c_slice, repr_c}};
 
 use tokio::sync::Mutex;
-use crate::{ConnectionStats, EndpointId, IrohError, IrohResult, PathChangeCallback, PathEventCallback, PathSnapshot, Side, path, watch::WatchHandle};
+use crate::{ConnectionStats, EndpointId, IrohError, IrohResult, PathChangeCallback, PathEventCallback, PathSnapshot, Side, iroh_executor, path, watch::WatchHandle};
 
 #[derive_ReprC]
 #[repr(opaque)]
@@ -23,6 +23,7 @@ impl Connection {
     }
 
     /// Open a new unidirectional outgoing stream.
+    /// This needs to be freed
     pub async fn open_uni(&self) -> Result<SendStream, IrohError> {
         let s = self.0.open_uni().await?;
         Ok(SendStream::new(s))
@@ -70,8 +71,6 @@ impl Connection {
     }
 
     /// Close the connection immediately with the given application error code.
-    ///
-    /// Signed for Kotlin/Swift ergonomics; negative values are rejected.
     pub fn close(&self, error_code: i64, reason: &[u8]) -> Result<(), IrohError> {
         let unsigned =
             u64::try_from(error_code).map_err(|_| anyhow::anyhow!("error_code must be >= 0"))?;
@@ -97,8 +96,8 @@ impl Connection {
     }
 
     /// The [`EndpointId`] of the remote peer.
-    pub fn remote_id(&self) -> Arc<EndpointId> {
-        Arc::new(self.0.remote_id().into())
+    pub fn remote_id(&self) -> EndpointId {
+        self.0.remote_id().into()
     }
 
     /// A stable identifier for this connection.
@@ -180,6 +179,153 @@ impl Connection {
     }
 }
 
+#[ffi_export]
+pub fn connection_alpn(connection: &Connection) -> repr_c::Vec<u8> {
+    connection.alpn().into()
+}
+
+#[ffi_export(executor=crate::iroh_executor)]
+pub async fn connection_open_uni(connection: &Connection) -> IrohResult<repr_c::Box<SendStream>> {
+    ffi_await!(async{
+        match connection.open_uni().await{
+            Ok(ss) => {IrohResult::ok(Box::from(ss).into())},
+            Err(e) => {IrohResult::err(e)}
+        }
+    })
+}
+
+#[ffi_export(executor=crate::iroh_executor)]
+pub async fn connection_accept_uni(connection: &Connection) -> IrohResult<repr_c::Box<RecvStream>> {
+    ffi_await!(async{
+        match connection.accept_uni().await{
+            Ok(rs) => {IrohResult::ok(Box::new(rs).into())},
+            Err(e) => {IrohResult::err(e)}
+        }
+    })
+}
+
+#[ffi_export(executor=crate::iroh_executor)]
+pub async fn connection_open_bi(connection: &Connection) -> IrohResult<repr_c::Box<BiStream>> {
+    ffi_await!(async{
+        match connection.open_bi().await{
+            Ok(bs) => {IrohResult::ok(Box::new(bs).into())},
+            Err(e) => {IrohResult::err(e)}
+        }
+    })
+}
+
+#[ffi_export(executor=crate::iroh_executor)]
+pub async fn connection_accept_bi(connection: &Connection) -> IrohResult<repr_c::Box<BiStream>> {
+    ffi_await!(async{
+        match connection.accept_bi().await{
+            Ok(bs) => {IrohResult::ok(Box::new(bs).into())},
+            Err(e) => {IrohResult::err(e)}
+        }
+    })
+}
+
+#[ffi_export(executor=crate::iroh_executor)]
+pub async fn connection_read_datagram(connection: &Connection) -> IrohResult<repr_c::Vec<u8>> {
+    ffi_await!(async{
+        match connection.read_datagram().await{
+            Ok(bs) => {IrohResult::ok(bs.into())},
+            Err(e) => {IrohResult::err(e)}
+        }
+    })
+}
+
+#[ffi_export(executor=crate::iroh_executor)]
+pub async fn connection_closed(connection: &Connection) -> repr_c::String {
+    ffi_await!(async{
+        connection.closed().await.into()
+    })
+}
+
+#[ffi_export]
+pub fn connection_close_reason(connection: &Connection) -> repr_c::TaggedOption<repr_c::String> {
+    match connection.close_reason(){
+        Some(reason) => {repr_c::TaggedOption::Some(reason.into())},
+        None => {repr_c::TaggedOption::None}
+    }
+}
+
+#[ffi_export]
+pub fn connection_close(connection: &Connection, error_code: i64, reason: repr_c::Vec<u8>) -> IrohResult<()> {
+    IrohResult::from_result(connection.close(error_code, &reason))
+} 
+
+#[ffi_export]
+pub fn connection_datagram(connection: &Connection, data: repr_c::Vec<u8>) -> IrohResult<()> {
+    IrohResult::from_result(connection.send_datagram(data.into()))
+}
+
+#[ffi_export]
+pub fn connection_max_datagram_size(connection: &Connection) -> repr_c::TaggedOption<u64> {
+    connection.max_datagram_size().into()
+}
+
+#[ffi_export]
+pub fn connection_datagram_send_buffer_space(connection: &Connection) -> u64 {
+    connection.datagram_send_buffer_space()
+}
+
+#[ffi_export]
+pub fn connection_remote_id(connection: &Connection) -> EndpointId {
+    connection.remote_id()
+}
+
+#[ffi_export]
+pub fn connection_stable_id(connection: &Connection) -> u64 {
+    connection.stable_id()
+}
+
+#[ffi_export]
+pub fn connection_rtt(connection: &Connection) -> repr_c::TaggedOption<u64> {
+    connection.rtt().into()
+}
+
+#[ffi_export]
+pub fn connection_stats(connection: &Connection) -> ConnectionStats{
+    connection.stats().into()
+}
+
+#[ffi_export(executor=crate::iroh_executor)]
+pub async fn connection_send_datagram_wait(connection: &Connection, data: repr_c::Vec<u8>) -> IrohResult<()> {
+    ffi_await!( async {
+        IrohResult::from_result(connection.send_datagram_wait(data.into()).await)
+    })
+}
+
+#[ffi_export]
+pub fn connection_side(connection: &Connection) -> Side {
+    connection.side()
+}
+
+#[ffi_export]
+pub fn connection_paths(connection: &Connection) -> repr_c::Vec<PathSnapshot> {
+    connection.paths().into()
+}
+
+//TODO think about how to implement watch handles
+
+
+#[ffi_export]
+pub fn connection_set_max_concurrent_uni_streams(connection: &Connection, count: u64) -> IrohResult<()> {
+    IrohResult::from_result(connection.set_max_concurrent_uni_streams(count))
+}
+
+#[ffi_export]
+pub fn connection_set_max_concurrent_bi_streams(connection: &Connection, count: u64) -> IrohResult<()> {
+    IrohResult::from_result(connection.set_max_concurrent_bi_streams(count))
+}
+
+#[ffi_export]
+pub fn connection_set_receive_window(connection: &Connection, count: u64) -> IrohResult<()> {
+    IrohResult::from_result(connection.set_receive_window(count))
+}
+
+
+
 /// A bidirectional QUIC stream pair.
 #[derive_ReprC]
 #[repr(opaque)]
@@ -187,7 +333,6 @@ pub struct BiStream {
     send: SendStream,
     recv: RecvStream,
 }
-
 
 impl BiStream {
     pub fn send(&self) -> SendStream {
@@ -300,7 +445,7 @@ pub async fn stopped(stream: &SendStream) -> IrohResult<repr_c::TaggedOption<u64
 }
 
 #[ffi_export(executor= crate::iroh_executor)]
-pub async fn id(stream: &SendStream) -> repr_c::String {
+pub async fn send_stream_id(stream: &SendStream) -> repr_c::String {
     ffi_await!(async  {
         let r = stream.0.lock().await;
         r.id().to_string().into()
@@ -365,7 +510,7 @@ pub async fn recv_id(stream: &RecvStream) -> repr_c::String {
 }
 
 
-#[ffi_export(executor= crate::iroh_executor)]
+#[ffi_export(executor=crate::iroh_executor)]
 pub async fn bytes_read(stream: &RecvStream) -> IrohResult<u64> {
     ffi_await!(async  {
         let r = stream.0.lock().await;

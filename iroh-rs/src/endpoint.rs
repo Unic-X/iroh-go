@@ -92,12 +92,8 @@ impl EndpointBuilder {
     }
 
     async fn bind_endpoint(&self) -> Result<Endpoint, IrohError> {
-        match self.take_inner() {
-            Ok(b) => {
-                Ok(Endpoint::from(b.bind().await?))
-            },
-            Err(e) => Err(e),
-        }
+        let builder = self.take_inner()?;
+        Ok((builder.bind().await?).into())
     }
 
     fn bind_addr(&self, addr: &str) -> Result<(), IrohError> {

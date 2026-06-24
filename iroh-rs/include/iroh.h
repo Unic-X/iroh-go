@@ -223,6 +223,325 @@ IrohResult_uint64_t
 bytes_read (
     RecvStream_t const * stream);
 
+/** <No documentation available> */
+typedef struct Connection Connection_t;
+
+/** \brief
+ *  A bidirectional QUIC stream pair.
+ */
+typedef struct BiStream BiStream_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_BiStream_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    BiStream_t * _1;
+} Tuple2_bool_BiStream_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_BiStream_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_BiStream_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_BiStream_ptr_t;
+
+/** <No documentation available> */
+IrohResult_BiStream_ptr_t
+connection_accept_bi (
+    Connection_t const * connection);
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_RecvStream_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    RecvStream_t * _1;
+} Tuple2_bool_RecvStream_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_RecvStream_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_RecvStream_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_RecvStream_ptr_t;
+
+/** <No documentation available> */
+IrohResult_RecvStream_ptr_t
+connection_accept_uni (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+Vec_uint8_t
+connection_alpn (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+IrohResult_void_t
+connection_close (
+    Connection_t const * connection,
+    int64_t error_code,
+    Vec_uint8_t reason);
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Vec_uint8 {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Vec_uint8_t _1;
+} Tuple2_bool_Vec_uint8_t;
+
+/** <No documentation available> */
+Tuple2_bool_Vec_uint8_t
+connection_close_reason (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+Vec_uint8_t
+connection_closed (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+IrohResult_void_t
+connection_datagram (
+    Connection_t const * connection,
+    Vec_uint8_t data);
+
+/** <No documentation available> */
+uint64_t
+connection_datagram_send_buffer_space (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+Tuple2_bool_uint64_t
+connection_max_datagram_size (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+IrohResult_BiStream_ptr_t
+connection_open_bi (
+    Connection_t const * connection);
+
+/** \brief
+ *  The outgoing half of a QUIC stream.
+ */
+typedef struct SendStream SendStream_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_SendStream_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    SendStream_t * _1;
+} Tuple2_bool_SendStream_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_SendStream_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_SendStream_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_SendStream_ptr_t;
+
+/** <No documentation available> */
+IrohResult_SendStream_ptr_t
+connection_open_uni (
+    Connection_t const * connection);
+
+/** \brief
+ *  A flat snapshot of an open path's state.
+ */
+typedef struct PathSnapshot PathSnapshot_t;
+
+/** \brief
+ *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
+ */
+typedef struct Vec_PathSnapshot {
+    /** <No documentation available> */
+    PathSnapshot_t * ptr;
+
+    /** <No documentation available> */
+    size_t len;
+
+    /** <No documentation available> */
+    size_t cap;
+} Vec_PathSnapshot_t;
+
+/** <No documentation available> */
+Vec_PathSnapshot_t
+connection_paths (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+typedef struct IrohResult_Vec_uint8 {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Vec_uint8_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Vec_uint8_t;
+
+/** <No documentation available> */
+IrohResult_Vec_uint8_t
+connection_read_datagram (
+    Connection_t const * connection);
+
+typedef struct {
+    uint8_t idx[32];
+} uint8_32_array_t;
+
+/** \brief
+ *  An endpoint's identifier, a 32-byte ed25519 public key.
+ *
+ *  In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
+ *  and uniquely identifies an [`Endpoint`](crate::Endpoint).
+ */
+typedef struct EndpointId {
+    /** <No documentation available> */
+    uint8_32_array_t key;
+} EndpointId_t;
+
+/** <No documentation available> */
+EndpointId_t
+connection_remote_id (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+Tuple2_bool_uint64_t
+connection_rtt (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+IrohResult_void_t
+connection_send_datagram_wait (
+    Connection_t const * connection,
+    Vec_uint8_t data);
+
+/** <No documentation available> */
+IrohResult_void_t
+connection_set_max_concurrent_bi_streams (
+    Connection_t const * connection,
+    uint64_t count);
+
+/** <No documentation available> */
+IrohResult_void_t
+connection_set_max_concurrent_uni_streams (
+    Connection_t const * connection,
+    uint64_t count);
+
+/** <No documentation available> */
+IrohResult_void_t
+connection_set_receive_window (
+    Connection_t const * connection,
+    uint64_t count);
+
+/** \brief
+ *  Which side of a connection we are.
+ */
+/** \remark Has the same ABI as `uint8_t` **/
+#ifdef DOXYGEN
+typedef
+#endif
+enum Side {
+    /** \brief
+     *  We initiated this connection.
+     */
+    SIDE_CLIENT,
+    /** \brief
+     *  We accepted this connection.
+     */
+    SIDE_SERVER,
+}
+#ifndef DOXYGEN
+; typedef uint8_t
+#endif
+Side_t;
+
+/** <No documentation available> */
+Side_t
+connection_side (
+    Connection_t const * connection);
+
+/** <No documentation available> */
+uint64_t
+connection_stable_id (
+    Connection_t const * connection);
+
+/** \brief
+ *  Flat snapshot of the headline numbers from `noq::ConnectionStats`.
+ *
+ *  Counters are `i64` (not `u64`) so Kotlin sees `Long`, not `ULong`.
+ */
+typedef struct ConnectionStats {
+    /** \brief
+     *  Total UDP datagrams transmitted.
+     */
+    int64_t udp_tx_datagrams;
+
+    /** \brief
+     *  Total UDP bytes transmitted.
+     */
+    int64_t udp_tx_bytes;
+
+    /** \brief
+     *  Total UDP datagrams received.
+     */
+    int64_t udp_rx_datagrams;
+
+    /** \brief
+     *  Total UDP bytes received.
+     */
+    int64_t udp_rx_bytes;
+
+    /** \brief
+     *  Total packets considered lost.
+     */
+    int64_t lost_packets;
+
+    /** \brief
+     *  Total bytes considered lost.
+     */
+    int64_t lost_bytes;
+} ConnectionStats_t;
+
+/** <No documentation available> */
+ConnectionStats_t
+connection_stats (
+    Connection_t const * connection);
+
 /** \brief
  *  An incoming connection that has not yet begun its server-side handshake.
  *
@@ -318,9 +637,6 @@ enum RelayModeFFI {
 ; typedef uint8_t
 #endif
 RelayModeFFI_t;
-
-/** <No documentation available> */
-typedef struct Connection Connection_t;
 
 /** <No documentation available> */
 typedef struct ProtocolHandler {
@@ -516,21 +832,6 @@ void
 endpoint_free (
     Endpoint_t * ep);
 
-typedef struct {
-    uint8_t idx[32];
-} uint8_32_array_t;
-
-/** \brief
- *  An endpoint's identifier, a 32-byte ed25519 public key.
- *
- *  In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
- *  and uniquely identifies an [`Endpoint`](crate::Endpoint).
- */
-typedef struct EndpointId {
-    /** <No documentation available> */
-    uint8_32_array_t key;
-} EndpointId_t;
-
 /** \brief
  *  The [`EndpointId`] of this endpoint.
  */
@@ -625,20 +926,10 @@ endpoint_secret_key (
     Endpoint_t const * ep);
 
 /** \brief
- *  The outgoing half of a QUIC stream.
- */
-typedef struct SendStream SendStream_t;
-
-/** \brief
  *  Signal that no more data will be sent on this stream.
  */
 IrohResult_void_t
 finish (
-    SendStream_t const * stream);
-
-/** <No documentation available> */
-Vec_uint8_t
-id (
     SendStream_t const * stream);
 
 /** \brief
@@ -669,30 +960,6 @@ typedef struct IrohResult_int32 {
 IrohResult_int32_t
 priority (
     SendStream_t const * stream);
-
-/** \brief
- *  Simplified for lighter documentation, but the actual impls
- *  range from `Tuple1` up to `Tuple6`.
- */
-typedef struct Tuple2_bool_Vec_uint8 {
-    /** <No documentation available> */
-    bool _0;
-
-    /** <No documentation available> */
-    Vec_uint8_t _1;
-} Tuple2_bool_Vec_uint8_t;
-
-/** <No documentation available> */
-typedef struct IrohResult_Vec_uint8 {
-    /** <No documentation available> */
-    IrohResultTag_t tag;
-
-    /** <No documentation available> */
-    Tuple2_bool_Vec_uint8_t value;
-
-    /** <No documentation available> */
-    Tuple2_bool_IrohError_t error;
-} IrohResult_Vec_uint8_t;
 
 /** <No documentation available> */
 IrohResult_Vec_uint8_t
@@ -769,6 +1036,11 @@ IrohResult_void_t
 secret_key (
     EndpointBuilder_t const * builder,
     Vec_uint8_t key);
+
+/** <No documentation available> */
+Vec_uint8_t
+send_stream_id (
+    SendStream_t const * stream);
 
 /** \brief
  *  Set the advertised ALPNs.

@@ -19,5 +19,7 @@ func main() {
 
 	ep.BoundSockets()
 
-	fmt.Println("hihihahah")
+	connection := iroh.Connection{}
+
+	connection.OpenUni()
 }

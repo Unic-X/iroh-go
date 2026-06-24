@@ -18,8 +18,9 @@ func FreeVec(v C.Vec_uint8_t) {
 }
 
 // Generic impl for Iterable
+// Strict constraint for now
 type Iterable interface {
-	string | ~[]byte
+	string | []byte
 }
 
 func ToVec[T Iterable](s T) C.Vec_uint8_t {
@@ -104,4 +105,18 @@ func BytesToString(s C.Vec_uint8_t) string {
 	)
 
 	return string(bytes)
+}
+
+func BytesToGo[T Iterable](s C.Vec_uint8_t) T {
+	if s.ptr == nil || s.len == 0 {
+		var zero T
+		return zero
+	}
+
+	bytes := unsafe.Slice(
+		(*byte)(unsafe.Pointer(s.ptr)),
+		int(s.len),
+	)
+
+	return T(bytes)
 }
