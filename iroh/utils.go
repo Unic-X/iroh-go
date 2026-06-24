@@ -8,7 +8,6 @@ package iroh
 */
 import "C"
 import (
-	"errors"
 	"unsafe"
 )
 
@@ -59,42 +58,6 @@ func ToVecVec[T Iterable](items []T) C.Vec_Vec_uint8_t {
 		cap: C.size_t(len(items)),
 	}
 
-}
-
-// Error Handling and Result Handling
-func ErrorFromC(err C.IrohError_t) error {
-	msg := BytesToString(err.message)
-
-	// Free error message buffer if ownership was transferred.
-	FreeVec(err.message)
-
-	return errors.New(msg)
-}
-
-type Result[T any] struct {
-	Value T
-	Err   error
-}
-
-func ResultVoid(res C.IrohResult_void_t) error {
-	if res.tag == C.IROH_RESULT_TAG_OK {
-		return nil
-	}
-
-	return ErrorFromC(res.error._1)
-}
-
-func ResultValue[T any](
-	ok bool,
-	value T,
-	err C.IrohError_t,
-) (T, error) {
-	if ok {
-		return value, nil
-	}
-
-	var zero T
-	return zero, ErrorFromC(err)
 }
 
 func VecStringToSlice(v C.Vec_Vec_uint8_t) []string {

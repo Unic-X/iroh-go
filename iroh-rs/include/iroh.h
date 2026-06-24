@@ -157,6 +157,38 @@ bind_addr (
     EndpointBuilder_t const * builder,
     Vec_uint8_t addr);
 
+/** <No documentation available> */
+typedef struct Endpoint Endpoint_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Endpoint_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Endpoint_t * _1;
+} Tuple2_bool_Endpoint_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Endpoint_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Endpoint_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Endpoint_ptr_t;
+
+/** <No documentation available> */
+IrohResult_Endpoint_ptr_t
+bind_endpoint (
+    EndpointBuilder_t const * builder);
+
 /** \brief
  *  The incoming half of a QUIC stream.
  */
@@ -190,9 +222,6 @@ typedef struct IrohResult_uint64 {
 IrohResult_uint64_t
 bytes_read (
     RecvStream_t const * stream);
-
-/** <No documentation available> */
-typedef struct Endpoint Endpoint_t;
 
 /** \brief
  *  An incoming connection that has not yet begun its server-side handshake.
@@ -353,30 +382,6 @@ typedef struct EndpointOptions {
     /** <No documentation available> */
     Vec_ProtocolHandler_t protocols;
 } EndpointOptions_t;
-
-/** \brief
- *  Simplified for lighter documentation, but the actual impls
- *  range from `Tuple1` up to `Tuple6`.
- */
-typedef struct Tuple2_bool_Endpoint_ptr {
-    /** <No documentation available> */
-    bool _0;
-
-    /** <No documentation available> */
-    Endpoint_t * _1;
-} Tuple2_bool_Endpoint_ptr_t;
-
-/** <No documentation available> */
-typedef struct IrohResult_Endpoint_ptr {
-    /** <No documentation available> */
-    IrohResultTag_t tag;
-
-    /** <No documentation available> */
-    Tuple2_bool_Endpoint_ptr_t value;
-
-    /** <No documentation available> */
-    Tuple2_bool_IrohError_t error;
-} IrohResult_Endpoint_ptr_t;
 
 /** \brief
  *  Bind a new endpoint with the given options.

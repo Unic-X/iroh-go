@@ -42,8 +42,6 @@ impl EndpointBuilder {
             .ok_or_else(|| anyhow::anyhow!("EndpointBuilder already consumed").into())
     }
     
-    // Helper to extract the builder for lib.rs to bind asynchronously
-
 }
 
 #[ffi_export]
@@ -91,6 +89,15 @@ impl EndpointBuilder {
     fn relay_mode(&self, mode: &RelayMode) {
         let mode = mode.clone();
         self.map(|b| b.relay_mode(mode));
+    }
+
+    async fn bind_endpoint(&self) -> Result<Endpoint, IrohError> {
+        match self.take_inner() {
+            Ok(b) => {
+                Ok(Endpoint::from(b.bind().await?))
+            },
+            Err(e) => Err(e),
+        }
     }
 
     fn bind_addr(&self, addr: &str) -> Result<(), IrohError> {
@@ -162,6 +169,16 @@ fn relay_mode(builder:&EndpointBuilder, mode: RelayModeFFI) {
 #[ffi_export]
 fn bind_addr(builder: &EndpointBuilder, addr: repr_c::String) -> IrohResult<()> {
     IrohResult::from_result(builder.bind_addr(&addr.to_string()))
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn bind_endpoint(builder: &EndpointBuilder) -> IrohResult<repr_c::Box<Endpoint>> {
+    ffi_await!( async {
+        match builder.bind_endpoint().await{
+            Ok(ep) => IrohResult::ok(Box::new(ep).into()),
+            Err(e) => IrohResult::err(e)   
+        }
+    })
 }
 
 
@@ -320,6 +337,15 @@ pub struct Endpoint {
 impl Endpoint {
     pub(crate) fn raw(&self) -> &endpoint::Endpoint {
         &self.inner
+    }
+}
+
+impl From<iroh::Endpoint> for Endpoint {
+    fn from(value: iroh::Endpoint) -> Self {
+        Self {
+            inner: value,
+            router: None //Not sure how to handle this 
+        }
     }
 }
 

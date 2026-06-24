@@ -74,3 +74,14 @@ func (b *EndpointBuilder) ApplyPreset(p Preset) {
 	cp := C.Preset_t(p)
 	C.apply_preset(&cp, b.ptr)
 }
+
+func (b *EndpointBuilder) BindEndpoint() (*Endpoint, error) {
+	res := C.bind_endpoint(b.ptr)
+
+	return ResultValue(
+		Endpoint{
+			ptr: res.value._1,
+		},
+		res.error,
+	)
+}
