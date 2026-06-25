@@ -74,7 +74,7 @@ func VecStringToSlice(v C.Vec_Vec_uint8_t) []string {
 	result := make([]string, 0, int(v.len))
 
 	for _, s := range strs {
-		result = append(result, BytesToString(s))
+		result = append(result, string(SliceFromC(s.ptr, s.len)))
 	}
 
 	return result
@@ -94,19 +94,6 @@ func FreeVecVec(v C.Vec_Vec_uint8_t) {
 	C.free(unsafe.Pointer(v.ptr))
 }
 
-func BytesToString(s C.Vec_uint8_t) string {
-	if s.ptr == nil || s.len == 0 {
-		return ""
-	}
-
-	bytes := unsafe.Slice(
-		(*byte)(unsafe.Pointer(s.ptr)),
-		int(s.len),
-	)
-
-	return string(bytes)
-}
-
 func BytesToGo[T Iterable](s C.Vec_uint8_t) T {
 	if s.ptr == nil || s.len == 0 {
 		var zero T
@@ -119,4 +106,12 @@ func BytesToGo[T Iterable](s C.Vec_uint8_t) T {
 	)
 
 	return T(bytes)
+}
+
+func SliceFromC[T any](ptr *T, len C.size_t) []T {
+	if ptr == nil || len == 0 {
+		return nil
+	}
+
+	return unsafe.Slice(ptr, int(len))
 }

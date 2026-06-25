@@ -13,17 +13,17 @@ use crate::{CallbackError, watch::WatchHandle};
 
 /// A flat snapshot of an open path's state.
 #[derive_ReprC]
-#[repr(opaque)]
+#[repr(C)]
 #[derive(Debug, Clone)]
 pub struct PathSnapshot {
     /// Opaque path identifier rendered as a string (upstream `PathId` is a u32
     /// wrapper but exposes no public accessor).
-    pub id: String,
+    pub id: repr_c::String,
     /// True if this path is currently selected for application data.
     pub is_selected: bool,
     /// The remote transport address as a string. For IP paths this is
     /// `ip:port`; for relay paths this is the relay URL.
-    pub remote_addr: String,
+    pub remote_addr: repr_c::String,
     /// True if this is a direct IP path.
     pub is_ip: bool,
     /// True if this is a relay path.
@@ -36,7 +36,7 @@ pub struct PathSnapshot {
 
 /// Flattened headline numbers from `noq::PathStats`.
 #[derive_ReprC]
-#[repr(opaque)]
+#[repr(C)]
 #[derive(Debug, Clone)]
 pub struct PathStatsRecord {
     /// RTT estimate (ms).
@@ -191,9 +191,9 @@ pub(crate) fn snapshot_paths(conn: iroh::endpoint::Connection) -> Vec<PathSnapsh
         .map(|p| {
             let stats = p.stats();
             PathSnapshot {
-                id: p.id().to_string(),
+                id: p.id().to_string().into(),
                 is_selected: p.is_selected(),
-                remote_addr: transport_addr_to_string(p.remote_addr()),
+                remote_addr: transport_addr_to_string(p.remote_addr()).into(),
                 is_ip: p.is_ip(),
                 is_relay: p.is_relay(),
                 rtt_ms: p.rtt().as_millis() as u64,
@@ -217,9 +217,9 @@ pub(crate) fn spawn_paths_watch(
                 .map(|p| {
                     let stats = p.stats();
                     PathSnapshot {
-                        id: p.id().to_string(),
+                        id: p.id().to_string().into(),
                         is_selected: p.is_selected(),
-                        remote_addr: transport_addr_to_string(p.remote_addr()),
+                        remote_addr: transport_addr_to_string(p.remote_addr()).into(),
                         is_ip: p.is_ip(),
                         is_relay: p.is_relay(),
                         rtt_ms: p.rtt().as_millis() as u64,

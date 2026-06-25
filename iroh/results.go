@@ -20,7 +20,7 @@ type Result[T any] struct {
 
 // Error Handling and Result Handling
 func ErrorFromC(err C.IrohError_t) error {
-	msg := BytesToString(err.message)
+	msg := BytesToGo[string](err.message)
 
 	// Free error message buffer if ownership was transferred.
 	FreeVec(err.message)

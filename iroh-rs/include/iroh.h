@@ -379,9 +379,101 @@ connection_open_uni (
     Connection_t const * connection);
 
 /** \brief
+ *  Flattened headline numbers from `noq::PathStats`.
+ */
+typedef struct PathStatsRecord {
+    /** \brief
+     *  RTT estimate (ms).
+     */
+    uint64_t rtt_ms;
+
+    /** \brief
+     *  UDP datagrams sent on this path.
+     */
+    uint64_t udp_tx_datagrams;
+
+    /** \brief
+     *  UDP bytes sent on this path.
+     */
+    uint64_t udp_tx_bytes;
+
+    /** \brief
+     *  UDP datagrams received on this path.
+     */
+    uint64_t udp_rx_datagrams;
+
+    /** \brief
+     *  UDP bytes received on this path.
+     */
+    uint64_t udp_rx_bytes;
+
+    /** \brief
+     *  Current congestion window.
+     */
+    uint64_t cwnd;
+
+    /** \brief
+     *  Congestion events on this path.
+     */
+    uint64_t congestion_events;
+
+    /** \brief
+     *  Packets considered lost on this path.
+     */
+    uint64_t lost_packets;
+
+    /** \brief
+     *  Bytes considered lost on this path.
+     */
+    uint64_t lost_bytes;
+
+    /** \brief
+     *  Largest UDP payload this path currently supports.
+     */
+    uint32_t current_mtu;
+} PathStatsRecord_t;
+
+/** \brief
  *  A flat snapshot of an open path's state.
  */
-typedef struct PathSnapshot PathSnapshot_t;
+typedef struct PathSnapshot {
+    /** \brief
+     *  Opaque path identifier rendered as a string (upstream `PathId` is a u32
+     *  wrapper but exposes no public accessor).
+     */
+    Vec_uint8_t id;
+
+    /** \brief
+     *  True if this path is currently selected for application data.
+     */
+    bool is_selected;
+
+    /** \brief
+     *  The remote transport address as a string. For IP paths this is
+     *  `ip:port`; for relay paths this is the relay URL.
+     */
+    Vec_uint8_t remote_addr;
+
+    /** \brief
+     *  True if this is a direct IP path.
+     */
+    bool is_ip;
+
+    /** \brief
+     *  True if this is a relay path.
+     */
+    bool is_relay;
+
+    /** \brief
+     *  RTT estimate in milliseconds (sampled from the live QUIC state).
+     */
+    uint64_t rtt_ms;
+
+    /** \brief
+     *  Flat headline statistics for this path.
+     */
+    PathStatsRecord_t stats;
+} PathSnapshot_t;
 
 /** \brief
  *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout

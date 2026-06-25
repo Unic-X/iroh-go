@@ -12,7 +12,14 @@ const (
 type RelayMode uint8
 
 const (
-	RelayModeDisabled RelayMode = 0
+	RelayModeDisabled RelayMode = iota
 	RelayModeDefault
 	RelayModeStaging
+)
+
+type Side uint8
+
+const (
+	ClientSide Side = iota
+	ServerSide
 )
