@@ -517,9 +517,9 @@ impl Endpoint {
     /// Returns `None` once the endpoint is closed. Use this for a custom accept
     /// loop instead of (or in addition to) registering protocol handlers via
     /// [`EndpointOptions::protocols`].
-    pub async fn accept_next(&self) -> Option<Arc<Incoming>> {
+    pub async fn accept_next(&self) -> Option<Incoming> {
         let incoming = self.inner.accept().await?;
-        Some(Arc::new(Incoming::new(incoming)))
+        Some(Incoming::new(incoming))
     }
 
     // /// Begin a connection attempt to `addr` for `alpn`, returning the
@@ -596,9 +596,9 @@ pub fn endpoint_addr(ep: &Endpoint) -> repr_c::Box<EndpointAddr> {
 
 /// Connect to a remote endpoint via the given ALPN.
 #[ffi_export(executor=iroh_executor)]
-pub async fn endpoint_connect(ep: &Endpoint, addr: &EndpointAddr, alpn: c_slice::Ref<'_,u8>) -> IrohResult<repr_c::Box<Connection>> {
+pub async fn endpoint_connect(ep: &Endpoint, addr: &EndpointAddr, alpn: repr_c::Vec<u8>) -> IrohResult<repr_c::Box<Connection>> {
     ffi_await!( async {
-        ep.connect(addr, alpn.as_slice())
+        ep.connect(addr, &alpn)
         .await
         .map(|conn| IrohResult::ok(Box::new(conn).into()))
         .unwrap_or_else(|e| IrohResult::err(e))
@@ -688,15 +688,15 @@ pub async fn endpoint_remove_relay(ep: &Endpoint, url: repr_c::String) -> IrohRe
 /// Returns `None` once the endpoint is closed. Use this for a custom accept
 /// loop instead of (or in addition to) registering protocol handlers via
 /// [`EndpointOptions::protocols`].
+/// TODO:simplify
 #[ffi_export(executor=iroh_executor)]
 pub async fn endpoint_accept_next(
     ep: &Endpoint,
 ) -> repr_c::TaggedOption<repr_c::Box<Incoming>> {
     ffi_await!(async {
-        ep.accept_next()
-            .await
-            .map(|incoming| Box::new(Arc::into_inner(incoming).unwrap()).into())
-            .into()
+        ep.accept_next().await
+        .map(|inc| Box::new(inc).into())
+        .into()
     })
 }
 
@@ -706,15 +706,16 @@ pub async fn endpoint_accept_next(
 // /// Unlike [`Self::connect`], which awaits the handshake before returning,
 // /// this exposes the pre-handshake handle so the caller can inspect ALPN or
 // /// drop the attempt explicitly.
+/// TODO:simplify
 #[ffi_export(executor=iroh_executor)]
 pub async fn endpoint_connect_pending(
     ep: &Endpoint,
     addr: &EndpointAddr,
-    alpn: c_slice::Ref<'_,u8>,
+    alpn: repr_c::Vec<u8>,
 ) -> IrohResult<repr_c::Box<Connecting>> {
     ffi_await!(async{
         IrohResult::from_result(
-            ep.connect_pending(addr, alpn.as_slice())
+            ep.connect_pending(addr, &alpn.to_vec())
                 .await
                 .map(|connecting| Box::new(connecting).into())
         )
