@@ -6,7 +6,6 @@ use iroh::{
 };
 
 use safer_ffi::ffi_export;
-use safer_ffi::prelude::c_slice;
 use safer_ffi::{derive_ReprC, prelude::repr_c};
 use std::{str::FromStr, sync::{Arc, Mutex}};
 use crate::watch::{self, AddrChangeCallback, HomeRelayCallback, NetworkChangeCallback, WatchHandle};
@@ -731,7 +730,7 @@ mod tests {
     use super::*;
 
     fn write_bytes(stream: &SendStream, bytes: &[u8]) {
-        write_all(stream, slice::Ref::from(bytes)).unwrap();
+        write_all(stream, bytes.to_vec().into()).unwrap();
     }
 
     const TEST_ALPN: &[u8] = b"iroh-ffi/test/0";

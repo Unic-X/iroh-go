@@ -8,10 +8,10 @@
 
 use std::sync::Arc;
 
-use safer_ffi::derive_ReprC;
+use safer_ffi::{derive_ReprC, ffi_export, prelude::repr_c};
 use tokio::sync::Mutex;
 
-use crate::{Connection, EndpointId, IrohError};
+use crate::{Connection, EndpointId, IncomingLocalAddrKind::{Custom, Ip, Relay}, IrohError, IrohResult, iroh_executor};
 
 /// Which side of a connection we are.
 #[derive_ReprC]
@@ -68,32 +68,55 @@ impl From<iroh::endpoint::IncomingAddr> for IncomingAddr {
     }
 }
 
+#[derive_ReprC]
+#[repr(u8)]
+#[derive(Debug, Clone, Default)]
+pub enum IncomingLocalAddrKind {
+    Ip,
+
+    #[default]
+    Relay,
+    Custom,
+}
+
 /// The local address that received an incoming connection.
 #[derive_ReprC]
-#[repr(opaque)]
-#[derive(Debug, Clone)]
-pub enum IncomingLocalAddr {
+#[repr(C)]
+#[derive(Debug, Clone, Default)]
+pub struct IncomingLocalAddr {
+    kind: IncomingLocalAddrKind,
+    
     /// Direct IP (`ip` string if available).
-    Ip { addr: Option<String> }, // Problem
+    addr: Option<repr_c::String>, // Problem
     /// Relay path.
-    Relay { url: String },
+    url: Option<repr_c::String>,
     /// Custom transport.
-    Custom { description: Option<String> },
+    description: Option<repr_c::String> ,
 }
 
 impl From<iroh::endpoint::LocalTransportAddr> for IncomingLocalAddr {
     fn from(value: iroh::endpoint::LocalTransportAddr) -> Self {
         match value {
-            iroh::endpoint::LocalTransportAddr::Ip(ip) => IncomingLocalAddr::Ip {
-                addr: ip.map(|i| i.to_string()),
+            iroh::endpoint::LocalTransportAddr::Ip(ip) => IncomingLocalAddr {
+                kind: Ip,
+                addr: ip.map(|i| i.to_string().into()).into(),
+                ..Default::default()
             },
-            iroh::endpoint::LocalTransportAddr::Relay(url) => IncomingLocalAddr::Relay {
-                url: url.to_string(),
+            iroh::endpoint::LocalTransportAddr::Relay(url) => IncomingLocalAddr {
+                kind: Relay,
+                url: Some(url.to_string().into()),
+                ..Default::default()
+
             },
-            iroh::endpoint::LocalTransportAddr::Custom(custom) => IncomingLocalAddr::Custom {
-                description: custom.map(|c| format!("{c:?}")),
+            iroh::endpoint::LocalTransportAddr::Custom(custom) => IncomingLocalAddr {
+                kind: Custom,
+                description: custom.map(|c| format!("{c:?}").into()).into(),
+                ..Default::default()
             },
-            _ => IncomingLocalAddr::Custom { description: None },
+            _ => IncomingLocalAddr{ 
+                kind: Custom,
+                ..Default::default()
+             },
         }
     }
 }
@@ -197,8 +220,48 @@ impl Incoming {
     }
 }
 
+#[ffi_export(executor=iroh_executor)]
+pub async fn incoming_accept(incoming : &Incoming) -> IrohResult<repr_c::Box<Accepting>>{
+    ffi_await!(async {
+        IrohResult::from_result(incoming.accept().await.map(|x|
+            Box::new(x).into()
+        ))
+    })
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn incoming_refuse(incoming : &Incoming) -> IrohResult<()>{
+    ffi_await!(async {
+        IrohResult::from_result(incoming.refuse().await)
+    })
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn incoming_retry(incoming : &Incoming) -> IrohResult<()>{
+    ffi_await!(async {
+        IrohResult::from_result(incoming.retry().await)
+    })
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn incoming_ignore(incoming : &Incoming) -> IrohResult<()>{
+    ffi_await!(async {
+        IrohResult::from_result(incoming.ignore().await)
+    })
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn incoming_local_addr(incoming : &Incoming) -> IrohResult<IncomingLocalAddr>{
+    ffi_await!(async {
+        IrohResult::from_result(incoming.local_addr().await)
+    })
+}
+
+
 /// A server-side handshake in progress. Await with [`Self::connect`].
 
+#[derive_ReprC]
+#[repr(opaque)]
 pub struct Accepting(Mutex<Option<iroh::endpoint::Accepting>>);
 
 impl Accepting {
@@ -229,10 +292,26 @@ impl Accepting {
         let mut guard = self.0.lock().await;
         let inner = guard
             .as_mut()
-            .ok_or_else(|| anyhow::anyhow!("Accepting has already been consumed"))?;
+            .ok_or_else(|| anyhow::anyhow!("accepting has already been consumed"))?;
         Ok(inner.alpn().await?)
     }
 }
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn accepting_connect(accepting : &Accepting) -> IrohResult<repr_c::Box<Connection>> {
+    ffi_await!( async {
+        IrohResult::from_result(accepting.connect().await.map(|a| Box::new(a).into()))
+    })
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn accepting_alpn(accepting : &Accepting) -> IrohResult<repr_c::Vec<u8>> {
+    ffi_await!( async {
+        IrohResult::from_result(accepting.alpn().await.map(|a| a.into()))
+    })
+}
+
+
 
 /// A client-side handshake in progress. Await with [`Self::connect`].
 #[derive_ReprC]
@@ -273,11 +352,32 @@ impl Connecting {
 
     /// The [`EndpointId`] this connection attempt targets.
 
-    pub async fn remote_id(&self) -> Result<Arc<EndpointId>, IrohError> {
+    pub async fn remote_id(&self) -> Result<EndpointId, IrohError> {
         let guard = self.0.lock().await;
         let inner = guard
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Connecting has already been consumed"))?;
-        Ok(Arc::new(inner.remote_id().into()))
+        Ok(inner.remote_id().into())
     }
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn connecting_connect(connecting : &Connecting) -> IrohResult<repr_c::Box<Connection>> {
+    ffi_await!( async {
+        IrohResult::from_result(connecting.connect().await.map(|a| Box::new(a).into()))
+    })
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn connecting_alpn(connecting : &Connecting) -> IrohResult<repr_c::Vec<u8>> {
+    ffi_await!( async {
+        IrohResult::from_result(connecting.alpn().await.map(|a| a.into()))
+    })
+}
+
+#[ffi_export(executor=iroh_executor)]
+pub async fn connecting_remote_id(connecting : &Connecting) -> IrohResult<EndpointId> {
+    ffi_await!( async {
+        IrohResult::from_result(connecting.remote_id().await)
+    })
 }

@@ -11,15 +11,10 @@ func main() {
 
 	builder.ApplyPreset(iroh.PresetN0)
 
-	ep, err := builder.BindEndpoint()
+	ep1, _ := builder.BindEndpoint()
 
-	if err != nil {
-		fmt.Println("Gaya baba")
+	for _, socket := range ep1.BoundSockets() {
+		fmt.Println(socket)
 	}
 
-	ep.BoundSockets()
-
-	connection := iroh.Connection{}
-
-	connection.OpenUni()
 }

@@ -13,6 +13,127 @@
 extern "C" {
 #endif
 
+/** \brief
+ *  A server-side handshake in progress. Await with [`Self::connect`].
+ */
+typedef struct Accepting Accepting_t;
+
+
+#include <stddef.h>
+#include <stdint.h>
+
+/** <No documentation available> */
+/** \remark Has the same ABI as `uint8_t` **/
+#ifdef DOXYGEN
+typedef
+#endif
+enum IrohResultTag {
+    /** <No documentation available> */
+    IROH_RESULT_TAG_OK,
+    /** <No documentation available> */
+    IROH_RESULT_TAG_ERROR,
+}
+#ifndef DOXYGEN
+; typedef uint8_t
+#endif
+IrohResultTag_t;
+
+
+#include <stdbool.h>
+
+/** \brief
+ *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
+ */
+typedef struct Vec_uint8 {
+    /** <No documentation available> */
+    uint8_t * ptr;
+
+    /** <No documentation available> */
+    size_t len;
+
+    /** <No documentation available> */
+    size_t cap;
+} Vec_uint8_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Vec_uint8 {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Vec_uint8_t _1;
+} Tuple2_bool_Vec_uint8_t;
+
+/** <No documentation available> */
+typedef struct IrohError {
+    /** <No documentation available> */
+    Vec_uint8_t message;
+} IrohError_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_IrohError {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    IrohError_t _1;
+} Tuple2_bool_IrohError_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Vec_uint8 {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Vec_uint8_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Vec_uint8_t;
+
+/** <No documentation available> */
+IrohResult_Vec_uint8_t
+accepting_alpn (
+    Accepting_t const * accepting);
+
+/** <No documentation available> */
+typedef struct Connection Connection_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Connection_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Connection_t * _1;
+} Tuple2_bool_Connection_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Connection_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Connection_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Connection_ptr_t;
+
+/** <No documentation available> */
+IrohResult_Connection_ptr_t
+accepting_connect (
+    Accepting_t const * accepting);
+
 /** <No documentation available> */
 typedef struct EndpointBuilder EndpointBuilder_t;
 
@@ -36,10 +157,6 @@ apply_n0 (
 void
 apply_n0_disable_relay (
     EndpointBuilder_t const * builder);
-
-
-#include <stddef.h>
-#include <stdint.h>
 
 /** <No documentation available> */
 /** \remark Has the same ABI as `uint8_t` **/
@@ -78,39 +195,6 @@ apply_preset (
     EndpointBuilder_t const * builder);
 
 /** \brief
- *  Same as [`Vec<T>`][`rust::Vec`], but with guaranteed `#[repr(C)]` layout
- */
-typedef struct Vec_uint8 {
-    /** <No documentation available> */
-    uint8_t * ptr;
-
-    /** <No documentation available> */
-    size_t len;
-
-    /** <No documentation available> */
-    size_t cap;
-} Vec_uint8_t;
-
-/** <No documentation available> */
-/** \remark Has the same ABI as `uint8_t` **/
-#ifdef DOXYGEN
-typedef
-#endif
-enum IrohResultTag {
-    /** <No documentation available> */
-    IROH_RESULT_TAG_OK,
-    /** <No documentation available> */
-    IROH_RESULT_TAG_ERROR,
-}
-#ifndef DOXYGEN
-; typedef uint8_t
-#endif
-IrohResultTag_t;
-
-
-#include <stdbool.h>
-
-/** \brief
  *  Simplified for lighter documentation, but the actual impls
  *  range from `Tuple1` up to `Tuple6`.
  */
@@ -118,24 +202,6 @@ typedef struct Tuple2_bool_void {
     /** <No documentation available> */
     bool _0;
 } Tuple2_bool_void_t;
-
-/** <No documentation available> */
-typedef struct IrohError {
-    /** <No documentation available> */
-    Vec_uint8_t message;
-} IrohError_t;
-
-/** \brief
- *  Simplified for lighter documentation, but the actual impls
- *  range from `Tuple1` up to `Tuple6`.
- */
-typedef struct Tuple2_bool_IrohError {
-    /** <No documentation available> */
-    bool _0;
-
-    /** <No documentation available> */
-    IrohError_t _1;
-} Tuple2_bool_IrohError_t;
 
 /** <No documentation available> */
 typedef struct IrohResult_void {
@@ -190,9 +256,29 @@ bind_endpoint (
     EndpointBuilder_t const * builder);
 
 /** \brief
+ *  A bidirectional QUIC stream pair.
+ */
+typedef struct BiStream BiStream_t;
+
+/** \brief
  *  The incoming half of a QUIC stream.
  */
 typedef struct RecvStream RecvStream_t;
+
+/** <No documentation available> */
+RecvStream_t *
+bitstream_recv (
+    BiStream_t const * bistream);
+
+/** \brief
+ *  The outgoing half of a QUIC stream.
+ */
+typedef struct SendStream SendStream_t;
+
+/** <No documentation available> */
+SendStream_t *
+bitstream_send (
+    BiStream_t const * bistream);
 
 /** \brief
  *  Simplified for lighter documentation, but the actual impls
@@ -223,13 +309,64 @@ IrohResult_uint64_t
 bytes_read (
     RecvStream_t const * stream);
 
+/** \brief
+ *  A client-side handshake in progress. Await with [`Self::connect`].
+ */
+typedef struct Connecting Connecting_t;
+
 /** <No documentation available> */
-typedef struct Connection Connection_t;
+IrohResult_Vec_uint8_t
+connecting_alpn (
+    Connecting_t const * connecting);
+
+/** <No documentation available> */
+IrohResult_Connection_ptr_t
+connecting_connect (
+    Connecting_t const * connecting);
+
+typedef struct {
+    uint8_t idx[32];
+} uint8_32_array_t;
 
 /** \brief
- *  A bidirectional QUIC stream pair.
+ *  An endpoint's identifier, a 32-byte ed25519 public key.
+ *
+ *  In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
+ *  and uniquely identifies an [`Endpoint`](crate::Endpoint).
  */
-typedef struct BiStream BiStream_t;
+typedef struct EndpointId {
+    /** <No documentation available> */
+    uint8_32_array_t key;
+} EndpointId_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_EndpointId {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    EndpointId_t _1;
+} Tuple2_bool_EndpointId_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_EndpointId {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_EndpointId_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_EndpointId_t;
+
+/** <No documentation available> */
+IrohResult_EndpointId_t
+connecting_remote_id (
+    Connecting_t const * connecting);
 
 /** \brief
  *  Simplified for lighter documentation, but the actual impls
@@ -301,18 +438,6 @@ connection_close (
     int64_t error_code,
     Vec_uint8_t reason);
 
-/** \brief
- *  Simplified for lighter documentation, but the actual impls
- *  range from `Tuple1` up to `Tuple6`.
- */
-typedef struct Tuple2_bool_Vec_uint8 {
-    /** <No documentation available> */
-    bool _0;
-
-    /** <No documentation available> */
-    Vec_uint8_t _1;
-} Tuple2_bool_Vec_uint8_t;
-
 /** <No documentation available> */
 Tuple2_bool_Vec_uint8_t
 connection_close_reason (
@@ -322,12 +447,6 @@ connection_close_reason (
 Vec_uint8_t
 connection_closed (
     Connection_t const * connection);
-
-/** <No documentation available> */
-IrohResult_void_t
-connection_datagram (
-    Connection_t const * connection,
-    Vec_uint8_t data);
 
 /** <No documentation available> */
 uint64_t
@@ -343,11 +462,6 @@ connection_max_datagram_size (
 IrohResult_BiStream_ptr_t
 connection_open_bi (
     Connection_t const * connection);
-
-/** \brief
- *  The outgoing half of a QUIC stream.
- */
-typedef struct SendStream SendStream_t;
 
 /** \brief
  *  Simplified for lighter documentation, but the actual impls
@@ -495,36 +609,9 @@ connection_paths (
     Connection_t const * connection);
 
 /** <No documentation available> */
-typedef struct IrohResult_Vec_uint8 {
-    /** <No documentation available> */
-    IrohResultTag_t tag;
-
-    /** <No documentation available> */
-    Tuple2_bool_Vec_uint8_t value;
-
-    /** <No documentation available> */
-    Tuple2_bool_IrohError_t error;
-} IrohResult_Vec_uint8_t;
-
-/** <No documentation available> */
 IrohResult_Vec_uint8_t
 connection_read_datagram (
     Connection_t const * connection);
-
-typedef struct {
-    uint8_t idx[32];
-} uint8_32_array_t;
-
-/** \brief
- *  An endpoint's identifier, a 32-byte ed25519 public key.
- *
- *  In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
- *  and uniquely identifies an [`Endpoint`](crate::Endpoint).
- */
-typedef struct EndpointId {
-    /** <No documentation available> */
-    uint8_32_array_t key;
-} EndpointId_t;
 
 /** <No documentation available> */
 EndpointId_t
@@ -535,6 +622,12 @@ connection_remote_id (
 Tuple2_bool_uint64_t
 connection_rtt (
     Connection_t const * connection);
+
+/** <No documentation available> */
+IrohResult_void_t
+connection_send_datagram (
+    Connection_t const * connection,
+    Vec_uint8_t data);
 
 /** <No documentation available> */
 IrohResult_void_t
@@ -660,6 +753,7 @@ typedef struct Tuple2_bool_Incoming_ptr {
  *  Returns `None` once the endpoint is closed. Use this for a custom accept
  *  loop instead of (or in addition to) registering protocol handlers via
  *  [`EndpointOptions::protocols`].
+ *  TODO:simplify
  */
 Tuple2_bool_Incoming_ptr_t
 endpoint_accept_next (
@@ -820,73 +914,13 @@ endpoint_close (
     Endpoint_t const * ep);
 
 /** \brief
- *  `&'lt [T]` but with a guaranteed `#[repr(C)]` layout.
- *
- *  # C layout (for some given type T)
- *
- *  ```c
- *  typedef struct {
- *  // Cannot be NULL
- *  T * ptr;
- *  size_t len;
- *  } slice_T;
- *  ```
- *
- *  # Nullable pointer?
- *
- *  If you want to support the above typedef, but where the `ptr` field is
- *  allowed to be `NULL` (with the contents of `len` then being undefined)
- *  use the `Option< slice_ptr<_> >` type.
- */
-typedef struct slice_ref_uint8 {
-    /** \brief
-     *  Pointer to the first element (if any).
-     */
-    uint8_t const * ptr;
-
-    /** \brief
-     *  Element count
-     */
-    size_t len;
-} slice_ref_uint8_t;
-
-/** \brief
- *  Simplified for lighter documentation, but the actual impls
- *  range from `Tuple1` up to `Tuple6`.
- */
-typedef struct Tuple2_bool_Connection_ptr {
-    /** <No documentation available> */
-    bool _0;
-
-    /** <No documentation available> */
-    Connection_t * _1;
-} Tuple2_bool_Connection_ptr_t;
-
-/** <No documentation available> */
-typedef struct IrohResult_Connection_ptr {
-    /** <No documentation available> */
-    IrohResultTag_t tag;
-
-    /** <No documentation available> */
-    Tuple2_bool_Connection_ptr_t value;
-
-    /** <No documentation available> */
-    Tuple2_bool_IrohError_t error;
-} IrohResult_Connection_ptr_t;
-
-/** \brief
  *  Connect to a remote endpoint via the given ALPN.
  */
 IrohResult_Connection_ptr_t
 endpoint_connect (
     Endpoint_t const * ep,
     EndpointAddr_t const * addr,
-    slice_ref_uint8_t alpn);
-
-/** \brief
- *  A client-side handshake in progress. Await with [`Self::connect`].
- */
-typedef struct Connecting Connecting_t;
+    Vec_uint8_t alpn);
 
 /** \brief
  *  Simplified for lighter documentation, but the actual impls
@@ -912,12 +946,14 @@ typedef struct IrohResult_Connecting_ptr {
     Tuple2_bool_IrohError_t error;
 } IrohResult_Connecting_ptr_t;
 
-/** <No documentation available> */
+/** \brief
+ *  TODO:simplify
+ */
 IrohResult_Connecting_ptr_t
 endpoint_connect_pending (
     Endpoint_t const * ep,
     EndpointAddr_t const * addr,
-    slice_ref_uint8_t alpn);
+    Vec_uint8_t alpn);
 
 /** <No documentation available> */
 void
@@ -1023,6 +1059,120 @@ endpoint_secret_key (
 IrohResult_void_t
 finish (
     SendStream_t const * stream);
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_Accepting_ptr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    Accepting_t * _1;
+} Tuple2_bool_Accepting_ptr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_Accepting_ptr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_Accepting_ptr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_Accepting_ptr_t;
+
+/** <No documentation available> */
+IrohResult_Accepting_ptr_t
+incoming_accept (
+    Incoming_t const * incoming);
+
+/** <No documentation available> */
+IrohResult_void_t
+incoming_ignore (
+    Incoming_t const * incoming);
+
+/** <No documentation available> */
+/** \remark Has the same ABI as `uint8_t` **/
+#ifdef DOXYGEN
+typedef
+#endif
+enum IncomingLocalAddrKind {
+    /** <No documentation available> */
+    INCOMING_LOCAL_ADDR_KIND_IP,
+    /** <No documentation available> */
+    INCOMING_LOCAL_ADDR_KIND_RELAY,
+    /** <No documentation available> */
+    INCOMING_LOCAL_ADDR_KIND_CUSTOM,
+}
+#ifndef DOXYGEN
+; typedef uint8_t
+#endif
+IncomingLocalAddrKind_t;
+
+/** \brief
+ *  The local address that received an incoming connection.
+ */
+typedef struct IncomingLocalAddr {
+    /** <No documentation available> */
+    IncomingLocalAddrKind_t kind;
+
+    /** \brief
+     *  Direct IP (`ip` string if available).
+     */
+    Vec_uint8_t addr;
+
+    /** \brief
+     *  Relay path.
+     */
+    Vec_uint8_t url;
+
+    /** \brief
+     *  Custom transport.
+     */
+    Vec_uint8_t description;
+} IncomingLocalAddr_t;
+
+/** \brief
+ *  Simplified for lighter documentation, but the actual impls
+ *  range from `Tuple1` up to `Tuple6`.
+ */
+typedef struct Tuple2_bool_IncomingLocalAddr {
+    /** <No documentation available> */
+    bool _0;
+
+    /** <No documentation available> */
+    IncomingLocalAddr_t _1;
+} Tuple2_bool_IncomingLocalAddr_t;
+
+/** <No documentation available> */
+typedef struct IrohResult_IncomingLocalAddr {
+    /** <No documentation available> */
+    IrohResultTag_t tag;
+
+    /** <No documentation available> */
+    Tuple2_bool_IncomingLocalAddr_t value;
+
+    /** <No documentation available> */
+    Tuple2_bool_IrohError_t error;
+} IrohResult_IncomingLocalAddr_t;
+
+/** <No documentation available> */
+IrohResult_IncomingLocalAddr_t
+incoming_local_addr (
+    Incoming_t const * incoming);
+
+/** <No documentation available> */
+IrohResult_void_t
+incoming_refuse (
+    Incoming_t const * incoming);
+
+/** <No documentation available> */
+IrohResult_void_t
+incoming_retry (
+    Incoming_t const * incoming);
 
 /** \brief
  *  Simplified for lighter documentation, but the actual impls
@@ -1167,7 +1317,7 @@ stopped (
 IrohResult_void_t
 write_all (
     SendStream_t const * stream,
-    slice_ref_uint8_t buf);
+    Vec_uint8_t buf);
 
 /** \brief
  *  Write some bytes, returning the number actually written.
@@ -1175,7 +1325,7 @@ write_all (
 IrohResult_uint64_t
 write_sendstream (
     SendStream_t const * stream,
-    slice_ref_uint8_t buf);
+    Vec_uint8_t buf);
 
 
 #ifdef __cplusplus

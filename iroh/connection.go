@@ -16,12 +16,47 @@ type BiStream struct {
 	ptr *C.BiStream_t
 }
 
+func (b *BiStream) Send() SendStream {
+	return SendStream{
+		ptr: C.bitstream_send(b.ptr),
+	}
+}
+
+func (b *BiStream) Recv() RecvStream {
+	return RecvStream{
+		ptr: C.bitstream_recv(b.ptr),
+	}
+}
+
 type SendStream struct {
 	ptr *C.SendStream_t
 }
 
+func (s *SendStream) WriteAll(buf []byte) error {
+	res := C.write_all(s.ptr, ToVec(buf))
+
+	return ResultVoid(res)
+}
+
+func (s *SendStream) Finish() error {
+	res := C.finish(s.ptr)
+
+	return ResultVoid(res)
+}
+
+// TODO add missing methods
+
 type RecvStream struct {
 	ptr *C.RecvStream_t
+}
+
+func (r *RecvStream) ReadToEnd(limit uint32) (*[]byte, error) {
+	res := C.read_to_end(r.ptr, C.uint32_t(limit))
+
+	return ResultValue(
+		BytesToGo[[]byte](res.value._1),
+		res.error,
+	)
 }
 
 func (c *Connection) Alpn() []byte {
@@ -98,10 +133,10 @@ func (c *Connection) Close(errCode int64, reason string) error {
 	return ResultVoid(res)
 }
 
-func (c *Connection) Datagram(data []byte) error {
+func (c *Connection) SendDatagram(data []byte) error {
 	bytes := ToVec(data)
 
-	res := C.connection_datagram(c.ptr, bytes)
+	res := C.connection_send_datagram(c.ptr, bytes)
 
 	return ResultVoid(res)
 }

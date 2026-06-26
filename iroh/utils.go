@@ -20,7 +20,7 @@ func FreeVec(v C.Vec_uint8_t) {
 // Generic impl for Iterable
 // Strict constraint for now
 type Iterable interface {
-	string | []byte
+	string | ~[]byte
 }
 
 func ToVec[T Iterable](s T) C.Vec_uint8_t {

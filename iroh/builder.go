@@ -24,12 +24,12 @@ func (b *EndpointBuilder) Free() {
 }
 
 // Replay the n0 production preset (relays + discovery + crypto provider).
-func (b *EndpointBuilder) N0() {
+func (b *EndpointBuilder) ApplyN0() {
 	C.apply_n0(b.ptr)
 }
 
 // Replay the minimal preset (crypto provider only, no external deps).
-func (b *EndpointBuilder) Minimal() {
+func (b *EndpointBuilder) ApplyMinimal() {
 	C.apply_minimal(b.ptr)
 }
 
@@ -41,7 +41,6 @@ func (b *EndpointBuilder) ApplyN0DisableRelay() {
 // Set the advertised ALPNs.
 func (b *EndpointBuilder) SetAlpns(alpns [][]byte) {
 	cAlpns := ToVecVec(alpns)
-	defer FreeVecVec(cAlpns)
 	C.set_alpns(b.ptr, cAlpns)
 }
 

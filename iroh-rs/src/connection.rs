@@ -255,7 +255,7 @@ pub fn connection_close(connection: &Connection, error_code: i64, reason: repr_c
 } 
 
 #[ffi_export]
-pub fn connection_datagram(connection: &Connection, data: repr_c::Vec<u8>) -> IrohResult<()> {
+pub fn connection_send_datagram(connection: &Connection, data: repr_c::Vec<u8>) -> IrohResult<()> {
     IrohResult::from_result(connection.send_datagram(data.into()))
 }
 
@@ -344,6 +344,17 @@ impl BiStream {
     }
 }
 
+#[ffi_export]
+pub fn bitstream_send(bistream : &BiStream) -> repr_c::Box<SendStream> {
+    Box::new(bistream.send()).into()
+}
+
+#[ffi_export]
+pub fn bitstream_recv(bistream : &BiStream)-> repr_c::Box<RecvStream> {
+    Box::new(bistream.recv()).into()
+}
+
+
 /// The outgoing half of a QUIC stream.
 #[derive_ReprC]
 #[repr(opaque)]
@@ -358,12 +369,11 @@ impl SendStream {
 
 /// Write some bytes, returning the number actually written.
 #[ffi_export(executor = crate::iroh_executor)]
-pub async fn write_sendstream(stream: &SendStream, buf: c_slice::Ref<'_, u8>) -> IrohResult<u64> {
+pub async fn write_sendstream(stream: &SendStream, buf: repr_c::Vec<u8>) -> IrohResult<u64> {
     ffi_await!(async move {
         let mut s = stream.0.lock().await;
-        let bytes: &[u8] = buf.as_slice();
         IrohResult::from_result(
-            s.write(bytes).await.map(|written| written as u64)
+            s.write(&buf).await.map(|written| written as u64)
         )
     })
 }
@@ -371,14 +381,12 @@ pub async fn write_sendstream(stream: &SendStream, buf: c_slice::Ref<'_, u8>) ->
 
 /// Write all bytes, looping as needed.
 #[ffi_export(executor= crate::iroh_executor)]
-pub async fn write_all(stream: &SendStream, buf: c_slice::Ref<'_, u8>) -> IrohResult<()> {
+pub async fn write_all(stream: &SendStream, buf: repr_c::Vec<u8>) -> IrohResult<()> {
     ffi_await!(async {
-
-        let bytes: &[u8] = buf.as_slice(); 
         let mut s = stream.0.lock().await;
 
         IrohResult::from_result(
-            s.write_all(bytes)
+            s.write_all(&buf)
                 .await
                 .map(|_| ())
         )
