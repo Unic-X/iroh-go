@@ -50,3 +50,10 @@ func ResultValue[T any](
 
 	return &value, nil
 }
+
+func OptionValue[T any](ok bool, value T) *T {
+	if !ok {
+		return nil
+	}
+	return &value
+}

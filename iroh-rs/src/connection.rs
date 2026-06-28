@@ -242,10 +242,10 @@ pub async fn connection_closed(connection: &Connection) -> repr_c::String {
 }
 
 #[ffi_export]
-pub fn connection_close_reason(connection: &Connection) -> repr_c::TaggedOption<repr_c::String> {
+pub fn connection_close_reason(connection: &Connection) -> IrohResult<repr_c::String> {
     match connection.close_reason(){
-        Some(reason) => {repr_c::TaggedOption::Some(reason.into())},
-        None => {repr_c::TaggedOption::None}
+        Some(reason) => {IrohResult::ok(reason.into())},
+        None => {IrohResult::err(anyhow::anyhow!("no reason was provided").into())}
     }
 }
 

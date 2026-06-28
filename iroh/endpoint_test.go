@@ -147,8 +147,6 @@ func TestConnectEchoRoundtrip(t *testing.T) {
 			return
 		}
 
-		conn.Closed()
-
 		serverDone <- nil
 	}()
 
@@ -171,8 +169,10 @@ func TestConnectEchoRoundtrip(t *testing.T) {
 		t.Fatalf("expected client side")
 	}
 
-	if string(conn.RemoteID().key) != string(serverID) {
-		t.Fatalf("unexpected remote ID")
+	remoteId := conn.RemoteID().key
+
+	if string(remoteId) != string(serverID) {
+		t.Fatalf("unexpected remote ID %v, %v", remoteId, serverID)
 	}
 
 	if len(conn.Paths()) == 0 {

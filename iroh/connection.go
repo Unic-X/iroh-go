@@ -119,11 +119,14 @@ func (c *Connection) Closed() string {
 	return BytesToGo[string](res)
 }
 
-// TODO after the option resolver is done
-// func (c *Connection) CloseReason() string {
-// 	res := C.connection_close_reason(c.ptr)
-// 	return BytesToString(res)
-// }
+func (c *Connection) CloseReason() (*string, error) {
+	res := C.connection_close_reason(c.ptr)
+
+	return ResultValue(
+		BytesToGo[string](res.value._1),
+		res.error,
+	)
+}
 
 func (c *Connection) Close(errCode int64, reason string) error {
 	bytes := ToVec(reason)
@@ -141,16 +144,25 @@ func (c *Connection) SendDatagram(data []byte) error {
 	return ResultVoid(res)
 }
 
-// TODO after the option resolver is done
-// func (c *Connection) MaxDatagramSize() error {
-// 	res := C.connection_max_datagram_size(c.ptr)
-// 	return Option(res)
-// }
+func (c *Connection) MaxDatagramSize() (*uint64, error) {
+	res := C.connection_max_datagram_size(c.ptr)
+
+	return OptionValue(
+		bool(res._0),
+		uint64(res._1),
+	), nil
+}
+
+func (c *Connection) DatagramSendBufferSpace() uint64 {
+	res := C.connection_datagram_send_buffer_space(c.ptr)
+
+	return uint64(res)
+}
 
 func (c *Connection) RemoteID() EndpointId {
 	id := C.connection_remote_id(c.ptr)
 
-	key := make([]byte, 32)
+	key := make([]byte, 0, 32)
 
 	for _, item := range id.key.idx {
 		key = append(key, byte(item))
@@ -165,10 +177,14 @@ func (c *Connection) StableId() uint64 {
 	return uint64(C.connection_stable_id(c.ptr))
 }
 
-// TODO after the option resolver is done
-// func (c *Connection) Rtt() uint64 {
-// 	return uint64(C.connection_rtt(c.ptr))
-// }
+func (c *Connection) Rtt() (*uint64, error) {
+	res := (C.connection_rtt(c.ptr))
+
+	return OptionValue(
+		bool(res._0),
+		uint64(res._1),
+	), nil
+}
 
 func (c *Connection) Stats() ConnectionStats {
 	stats := C.connection_stats(c.ptr)
@@ -195,7 +211,7 @@ func (c *Connection) Side() Side {
 
 func (c *Connection) Paths() []PathSnapshot {
 	v := C.connection_paths(c.ptr)
-	paths := make([]PathSnapshot, v.len)
+	paths := make([]PathSnapshot, 0, v.len)
 
 	for _, path := range SliceFromC(v.ptr, v.len) {
 		paths = append(paths, PathSnapshot{
@@ -235,4 +251,81 @@ func (c *Connection) SetMaxConcurrentBiStreams(count uint64) error {
 func (c *Connection) SetReceiveWindow(count uint64) error {
 	res := C.connection_set_receive_window(c.ptr, C.uint64_t(count))
 	return ResultVoid(res)
+}
+
+func (s *SendStream) Reset(err uint64) error {
+	res := C.reset(s.ptr, C.uint64_t(err))
+	return ResultVoid(res)
+}
+
+func (s *SendStream) SetPriority(p int32) error {
+	res := C.set_priority(s.ptr, C.int32_t(p))
+
+	return ResultVoid(res)
+}
+
+func (s *SendStream) Stopped() (*uint64, error) {
+	res := C.stopped(s.ptr)
+
+	return OptionValue(
+		bool(res.value._0),
+		uint64(*res.error._1.message.ptr),
+	), nil
+
+}
+
+func (s *SendStream) StreamId() string {
+	res := C.send_stream_id(s.ptr)
+
+	return BytesToGo[string](res)
+}
+
+func (r *RecvStream) ReadResvStream(size uint32) (*[]byte, error) {
+	res := C.read_resvstream(r.ptr, C.uint32_t(size))
+
+	return ResultValue(
+		BytesToGo[[]byte](res.value._1),
+		res.error,
+	)
+}
+
+func (r *RecvStream) ReadExact(size uint32) (*[]byte, error) {
+	res := C.read_exact(r.ptr, C.uint32_t(size))
+
+	return ResultValue(
+		BytesToGo[[]byte](res.value._1),
+		res.error,
+	)
+}
+
+func (r *RecvStream) RecvId() string {
+	res := C.recv_id(r.ptr)
+
+	return BytesToGo[string](res)
+}
+
+func (r *RecvStream) BytesRead() (*uint64, error) {
+	res := C.bytes_read(r.ptr)
+
+	return ResultValue(
+		uint64(res.value._1),
+		res.error,
+	)
+}
+
+func (r *RecvStream) Stop(err uint64) error {
+	res := C.stop(r.ptr, C.uint64_t(err))
+
+	return ResultVoid(res)
+
+}
+
+func (r *RecvStream) Received_reset() (*uint64, error) {
+	res := C.received_reset(r.ptr)
+
+	return OptionValue(
+		bool(res.value._0),
+		uint64(*res.error._1.message.ptr),
+	), nil
+
 }

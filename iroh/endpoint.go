@@ -67,7 +67,7 @@ func (e *Endpoint) Id() EndpointId {
 	id := C.endpoint_id(
 		e.ptr,
 	)
-	key := make([]byte, 32)
+	key := make([]byte, 0, 32)
 
 	for _, item := range id.key.idx {
 		key = append(key, byte(item))
@@ -316,7 +316,7 @@ func (c *Connecting) Alpn() (*[]byte, error) {
 func (c *Connecting) RemoteId() (*EndpointId, error) {
 	res := C.connecting_remote_id(c.ptr)
 
-	key := make([]byte, 32)
+	key := make([]byte, 0, 32)
 
 	for _, item := range res.value._1.key.idx {
 		key = append(key, byte(item))

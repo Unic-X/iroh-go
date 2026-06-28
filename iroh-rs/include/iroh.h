@@ -439,7 +439,7 @@ connection_close (
     Vec_uint8_t reason);
 
 /** <No documentation available> */
-Tuple2_bool_Vec_uint8_t
+IrohResult_Vec_uint8_t
 connection_close_reason (
     Connection_t const * connection);
 

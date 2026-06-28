@@ -1,8 +1,10 @@
 {
-  "go.toolsEnvVars": {
-    "LD_LIBRARY_PATH": "${workspaceFolder}/iroh-rs/target/release"
-  },
-  "go.testEnvVars": {
-    "LD_LIBRARY_PATH": "${workspaceFolder}/iroh-rs/target/release"
-  }
+    "go.toolsEnvVars": {
+        "CGO_LDFLAGS": "-L${workspaceFolder}/iroh-rs/target/release",
+        "LD_LIBRARY_PATH": "${workspaceFolder}/iroh-rs/target/release"
+    },
+    "go.testEnvVars": {
+        "CGO_LDFLAGS": "-L${workspaceFolder}/iroh-rs/target/release",
+        "LD_LIBRARY_PATH": "${workspaceFolder}/iroh-rs/target/release"
+    }
 }
